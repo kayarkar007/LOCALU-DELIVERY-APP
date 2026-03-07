@@ -1,0 +1,238 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { User, Phone, MapPin, Package, LogOut, Loader2, ArrowLeft, CheckCircle2, Truck, Clock } from "lucide-react";
+import Link from "next/link";
+import { toast } from "sonner";
+
+export default function ProfilePage() {
+    const { data: session, status } = useSession();
+    const router = useRouter();
+    const [orders, setOrders] = useState<any[]>([]);
+    const [profile, setProfile] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (status === "unauthenticated") {
+            router.push("/login");
+            return;
+        }
+
+        if (status === "authenticated") {
+            // Fetch User Details
+            fetch("/api/user/profile")
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        setProfile(data.data);
+                    }
+                });
+
+            // Fetch User Orders
+            fetch(`/api/orders?userId=${session.user.id}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        setOrders(data.data);
+                    }
+                    setLoading(false);
+                })
+                .catch(() => setLoading(false));
+        }
+    }, [status, session, router]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
+            <div className="max-w-4xl mx-auto">
+                <Link href="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors mb-6 font-medium">
+                    <ArrowLeft className="w-4 h-4" /> Back to Home
+                </Link>
+
+                <div className="flex flex-col md:flex-row gap-8">
+
+                    {/* Sidebar / Profile Card */}
+                    <div className="w-full md:w-1/3">
+                        <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100 text-center sticky top-8">
+                            <div className="w-24 h-24 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl font-black">
+                                {session?.user?.name?.charAt(0)}
+                            </div>
+                            <h2 className="text-xl font-black text-gray-900 mb-1">{session?.user?.name}</h2>
+                            <p className="text-sm text-gray-500 mb-6">{session?.user?.email}</p>
+
+                            <div className="space-y-4 text-left">
+                                <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                                    <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">WhatsApp</p>
+                                        <p className="text-sm font-medium text-gray-900">{profile?.whatsapp || "Not provided"}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                                    <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Saved Address</p>
+                                        <p className="text-sm font-medium text-gray-900 leading-relaxed">
+                                            {profile?.address || "No address saved. It will be saved from your next order!"}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => signOut()}
+                                className="w-full mt-8 flex items-center justify-center gap-2 text-red-600 font-bold p-3 rounded-xl hover:bg-red-50 transition-colors"
+                            >
+                                <LogOut className="w-4 h-4" /> Sign Out
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Main Content / Orders */}
+                    <div className="w-full md:w-2/3">
+                        <h2 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-2">
+                            <Package className="w-6 h-6 text-blue-600" /> My Orders
+                        </h2>
+
+                        {orders.length === 0 ? (
+                            <div className="bg-white p-12 text-center rounded-[2rem] border border-dashed border-gray-300">
+                                <Package className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">No orders yet</h3>
+                                <p className="text-gray-500 mb-6">You haven't placed any orders. Start exploring local stores!</p>
+                                <Link href="/" className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition">
+                                    Browse Products
+                                </Link>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {orders.map(order => {
+                                    const statusList = ["pending", "processing", "shipped", "delivered"];
+                                    const currentStatusIndex = statusList.indexOf(order.status) !== -1 ? statusList.indexOf(order.status) : 0;
+                                    const isCancelled = order.status === "cancelled";
+
+                                    return (
+                                        <div key={order._id} className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 hover:border-blue-100 transition-all flex flex-col gap-6">
+
+                                            {/* Header */}
+                                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                                                <div>
+                                                    <div className="flex items-center gap-3 mb-1">
+                                                        <span className="bg-blue-100 text-blue-700 px-3 py-1 text-xs font-black tracking-widest rounded-lg">
+                                                            #ORD-{order._id.slice(-6).toUpperCase()}
+                                                        </span>
+                                                        <span className={`px-3 py-1 text-xs font-bold rounded-lg ${order.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                                                            order.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                                                'bg-orange-100 text-orange-700'
+                                                            }`}>
+                                                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm font-medium text-gray-500">
+                                                        Placed on {new Date(order.createdAt).toLocaleDateString('en-US', {
+                                                            month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                                                        })}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Beautiful Status Tracker */}
+                                            <div className="bg-gray-50 p-6 rounded-2xl">
+                                                <div className="relative flex justify-between">
+                                                    {/* Connecting Line */}
+                                                    <div className="absolute left-0 top-1/2 -mt-0.5 w-full h-1 bg-gray-200 rounded-full z-0"></div>
+
+                                                    {isCancelled ? (
+                                                        <div className="w-full flex justify-center z-10">
+                                                            <div className="flex flex-col items-center gap-2">
+                                                                <div className="w-8 h-8 rounded-full bg-red-100 text-red-500 flex items-center justify-center border-4 border-gray-50">
+                                                                    <div className="w-2.5 h-2.5 bg-red-500 rounded-full"></div>
+                                                                </div>
+                                                                <span className="text-xs font-bold text-red-600 tracking-wide uppercase">Order Cancelled</span>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        statusList.map((step, idx) => {
+                                                            const isCompleted = idx <= currentStatusIndex;
+                                                            const isActive = idx === currentStatusIndex;
+
+                                                            let Icon = Clock;
+                                                            if (step === 'processing') Icon = Package;
+                                                            if (step === 'shipped') Icon = Truck;
+                                                            if (step === 'delivered') Icon = CheckCircle2;
+
+                                                            return (
+                                                                <div key={step} className="flex flex-col items-center gap-2 z-10 w-1/4">
+                                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border-4 border-gray-50 transition-colors ${isCompleted ? 'bg-blue-600 text-white' : 'bg-white text-gray-300 border-gray-200'
+                                                                        } ${isActive ? 'ring-4 ring-blue-100' : ''}`}>
+                                                                        {isCompleted ? <Icon className="w-3.5 h-3.5" /> : <div className="w-2 h-2 rounded-full bg-gray-200"></div>}
+                                                                    </div>
+                                                                    <span className={`text-[10px] sm:text-xs font-bold tracking-wide uppercase text-center ${isCompleted ? 'text-gray-900' : 'text-gray-400'
+                                                                        }`}>
+                                                                        {step}
+                                                                    </span>
+                                                                </div>
+                                                            )
+                                                        })
+                                                    )}
+
+                                                    {/* Active Line Progress overlay */}
+                                                    {!isCancelled && (
+                                                        <div
+                                                            className="absolute left-0 top-1/2 -mt-0.5 h-1 bg-blue-600 rounded-full z-0 transition-all duration-500"
+                                                            style={{ width: `${(currentStatusIndex / (statusList.length - 1)) * 100}%` }}
+                                                        ></div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Order Details */}
+                                            <div className="border border-gray-100 rounded-2xl p-5 bg-white space-y-3">
+                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Order Summary</p>
+                                                {order.type === 'service' ? (
+                                                    <div className="text-sm sm:text-base text-gray-600 space-y-2">
+                                                        <p><span className="font-bold text-gray-900">Service:</span> {order.serviceCategory || "Service Request"}</p>
+                                                        {order.serviceDetails && Object.entries(order.serviceDetails).map(([k, v]) => (
+                                                            <div key={k} className="flex justify-between">
+                                                                <span className="capitalize">{k.replace(/([A-Z])/g, ' $1').trim()}:</span>
+                                                                <span className="font-medium text-gray-900">{String(v)}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    order.items?.map((item: any, idx: number) => (
+                                                        <div key={idx} className="flex justify-between text-sm sm:text-base">
+                                                            <span className="text-gray-600 flex gap-3">
+                                                                <span className="font-black text-gray-900 bg-gray-100 px-2 py-0.5 rounded-md">{item.quantity}x</span>
+                                                                {item.name || "Unknown Item"}
+                                                            </span>
+                                                            <span className="font-bold text-gray-900">₹{item.price * item.quantity}</span>
+                                                        </div>
+                                                    ))
+                                                )}
+
+                                                <div className="flex justify-between items-center pt-4 mt-2 border-t border-dashed border-gray-200">
+                                                    <span className="font-bold text-gray-500">Total Paid</span>
+                                                    <span className="text-xl font-black text-blue-600">₹{order.total}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        )}
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    );
+}

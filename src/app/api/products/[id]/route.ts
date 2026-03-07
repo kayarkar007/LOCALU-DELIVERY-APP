@@ -1,0 +1,30 @@
+import { NextResponse } from "next/server";
+import connectToDatabase from "@/lib/mongoose";
+import Product from "@/models/Product";
+
+export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
+    try {
+        await connectToDatabase();
+        const params = await context.params;
+        const id = params.id;
+        const body = await request.json();
+        const product = await Product.findByIdAndUpdate(id, body, { new: true });
+        if (!product) return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
+        return NextResponse.json({ success: true, data: product });
+    } catch (error) {
+        return NextResponse.json({ success: false, error: "Failed to update product" }, { status: 400 });
+    }
+}
+
+export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+    try {
+        await connectToDatabase();
+        const params = await context.params;
+        const id = params.id;
+        const product = await Product.findByIdAndDelete(id);
+        if (!product) return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
+        return NextResponse.json({ success: true, data: {} });
+    } catch (error) {
+        return NextResponse.json({ success: false, error: "Failed to delete product" }, { status: 400 });
+    }
+}
