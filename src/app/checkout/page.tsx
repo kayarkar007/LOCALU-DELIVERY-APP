@@ -6,6 +6,7 @@ import { calculatePricing } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { MapPin, Phone, User, CheckCircle2, Loader2, ArrowLeft, LocateFixed, CreditCard, Banknote, Tag, Wallet } from "lucide-react";
 import Link from "next/link";
+import Script from "next/script";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 
@@ -18,7 +19,7 @@ export default function CheckoutPage() {
     const [loading, setLoading] = useState(true);
     const [placingOrder, setPlacingOrder] = useState(false);
     const [locating, setLocating] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState<"cod" | "upi">("cod");
+    const [paymentMethod, setPaymentMethod] = useState<"cod" | "upi" | "razorpay">("razorpay");
     const [transactionId, setTransactionId] = useState("");
 
     const [promoCode, setPromoCode] = useState("");
@@ -150,16 +151,7 @@ export default function CheckoutPage() {
         }
     };
 
-    const handlePlaceOrder = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setPlacingOrder(true);
-
-        if (paymentMethod === "upi" && !transactionId.trim()) {
-            toast.error("Please enter the UPI Transaction ID.");
-            setPlacingOrder(false);
-            return;
-        }
-
+    const submitOrder = async (method: string, txId?: string) => {
         const orderData = {
             type: "product",
             userId: session?.user?.id,
@@ -182,8 +174,8 @@ export default function CheckoutPage() {
             promoCode: appliedPromo?.code,
             walletUsed: walletUsed,
             total: finalTotal,
-            paymentMethod: finalTotal === 0 ? "wallet" : paymentMethod,
-            transactionId: paymentMethod === "upi" ? transactionId : undefined
+            paymentMethod: finalTotal === 0 ? "wallet" : method,
+            transactionId: txId
         };
 
         try {
@@ -204,7 +196,7 @@ export default function CheckoutPage() {
                 }
 
                 toast.success("Order Placed Successfully!", {
-                    description: "Redirecting to WhatsApp to send details to the store...",
+                    description: "Redirecting to your profile...",
                     icon: '🎉'
                 });
 
@@ -222,31 +214,100 @@ export default function CheckoutPage() {
         }
     };
 
+    const handlePlaceOrder = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setPlacingOrder(true);
+
+        if (paymentMethod === "upi" && !transactionId.trim()) {
+            toast.error("Please enter the UPI Transaction ID.");
+            setPlacingOrder(false);
+            return;
+        }
+
+        if (paymentMethod === "razorpay" && finalTotal > 0) {
+            try {
+                const res = await fetch("/api/payment/create-order", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ amount: finalTotal }),
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    toast.error("Failed to initialize payment");
+                    setPlacingOrder(false);
+                    return;
+                }
+
+                if (data.mock) {
+                    toast.success("Test Mode: Mock Payment successful.");
+                    await submitOrder("razorpay", "mock_payment_" + Date.now());
+                    return;
+                }
+
+                const options = {
+                    key: data.keyId,
+                    amount: finalTotal * 100,
+                    currency: "INR",
+                    name: "Localu",
+                    description: "Order Payment",
+                    order_id: data.order.id,
+                    handler: async function (response: any) {
+                        toast.success("Payment successful! Placing order...");
+                        await submitOrder("razorpay", response.razorpay_payment_id);
+                    },
+                    prefill: {
+                        name: form.name,
+                        contact: form.whatsapp,
+                    },
+                    theme: {
+                        color: "#2563eb"
+                    }
+                };
+
+                const rzp = new (window as any).Razorpay(options);
+                rzp.on('payment.failed', function (response: any) {
+                    toast.error(response.error.description);
+                    setPlacingOrder(false);
+                });
+                rzp.open();
+            } catch (e) {
+                toast.error("Payment gateway error");
+                setPlacingOrder(false);
+                return;
+            }
+        } else {
+            // COD or UPI or Wallet
+            await submitOrder(paymentMethod, paymentMethod === "upi" ? transactionId : undefined);
+        }
+    };
+
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-12 px-4 sm:px-6 lg:px-8 font-sans transition-colors duration-300">
+            <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
             <div className="max-w-3xl mx-auto">
-                <Link href="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors mb-6 font-medium">
+                <Link href="/" className="inline-flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors mb-6 font-medium">
                     <ArrowLeft className="w-4 h-4" /> Back to Shopping
                 </Link>
 
-                <h1 className="text-3xl font-black text-gray-900 mb-8">Checkout</h1>
+                <h1 className="text-3xl font-black text-gray-900 dark:text-white mb-8">Checkout</h1>
 
                 <div className="grid md:grid-cols-2 gap-8">
                     {/* Delivery Form */}
-                    <div className="bg-white p-6 sm:p-8 rounded-[2rem] shadow-sm border border-gray-100 h-fit">
-                        <h2 className="text-xl font-bold text-gray-900 mb-6">Delivery Details</h2>
+                    <div className="bg-white dark:bg-gray-900 p-6 sm:p-8 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 h-fit transition-colors">
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Delivery Details</h2>
 
                         <form onSubmit={handlePlaceOrder} className="space-y-5">
                             <div>
-                                <label className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
+                                <label className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                     <User className="w-4 h-4" /> Full Name
                                 </label>
                                 <input
@@ -254,12 +315,12 @@ export default function CheckoutPage() {
                                     required
                                     value={form.name}
                                     onChange={e => setForm({ ...form, name: e.target.value })}
-                                    className="w-full border border-gray-200 text-gray-900 p-4 rounded-xl flex-1 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all font-medium bg-gray-50"
+                                    className="w-full border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white p-4 rounded-xl flex-1 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/40 focus:border-blue-500 outline-none transition-all font-medium bg-gray-50 dark:bg-gray-800"
                                 />
                             </div>
 
                             <div>
-                                <label className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
+                                <label className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                     <Phone className="w-4 h-4" /> WhatsApp Number
                                 </label>
                                 <input
@@ -267,20 +328,20 @@ export default function CheckoutPage() {
                                     required
                                     value={form.whatsapp}
                                     onChange={e => setForm({ ...form, whatsapp: e.target.value })}
-                                    className="w-full border border-gray-200 text-gray-900 p-4 rounded-xl flex-1 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all font-medium bg-gray-50"
+                                    className="w-full border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white p-4 rounded-xl flex-1 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/40 focus:border-blue-500 outline-none transition-all font-medium bg-gray-50 dark:bg-gray-800"
                                 />
                             </div>
 
                             <div>
                                 <div className="flex items-center justify-between mb-2">
-                                    <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                                    <label className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300">
                                         <MapPin className="w-4 h-4" /> Delivery Address
                                     </label>
                                     <button
                                         type="button"
                                         onClick={handleLocate}
                                         disabled={locating}
-                                        className="text-xs font-bold text-blue-600 flex items-center gap-1 hover:text-blue-800 disabled:opacity-50 transition-colors bg-blue-50 px-3 py-1.5 rounded-full"
+                                        className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-50 transition-colors bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-full"
                                     >
                                         {locating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LocateFixed className="w-3.5 h-3.5" />}
                                         {locating ? "Locating..." : "Auto Locate"}
@@ -292,21 +353,21 @@ export default function CheckoutPage() {
                                     value={form.address}
                                     onChange={e => setForm({ ...form, address: e.target.value })}
                                     placeholder="Enter your full building and street address..."
-                                    className="w-full border border-gray-200 text-gray-900 p-4 rounded-xl flex-1 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all font-medium bg-gray-50 resize-none"
+                                    className="w-full border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white p-4 rounded-xl flex-1 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/40 focus:border-blue-500 outline-none transition-all font-medium bg-gray-50 dark:bg-gray-800 resize-none"
                                 />
                             </div>
 
                             {/* Payment Method Section */}
-                            <div className="pt-4 border-t border-gray-100">
-                                <h3 className="text-lg font-bold text-gray-900 mb-4">Payment Method</h3>
+                            <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Payment Method</h3>
 
                                 {walletBalance > 0 && (
-                                    <div className="mb-4 bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-center justify-between">
+                                    <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 p-4 rounded-xl flex items-center justify-between">
                                         <div className="flex items-center gap-3">
-                                            <Wallet className="w-5 h-5 text-blue-600" />
+                                            <Wallet className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                             <div>
-                                                <p className="font-bold text-gray-900 text-sm">Localu Wallet Balance</p>
-                                                <p className="text-xs text-blue-600 font-bold">Available: ₹{walletBalance.toFixed(2)}</p>
+                                                <p className="font-bold text-gray-900 dark:text-white text-sm">Localu Wallet Balance</p>
+                                                <p className="text-xs text-blue-600 dark:text-blue-400 font-bold">Available: ₹{walletBalance.toFixed(2)}</p>
                                             </div>
                                         </div>
                                         <label className="relative inline-flex items-center cursor-pointer">
@@ -317,22 +378,30 @@ export default function CheckoutPage() {
                                 )}
 
                                 {finalTotal > 0 && (
-                                    <div className="grid grid-cols-2 gap-4 mb-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                                         <button
                                             type="button"
                                             onClick={() => setPaymentMethod("cod")}
-                                            className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${paymentMethod === "cod" ? "border-blue-600 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-500 hover:border-blue-300"}`}
+                                            className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${paymentMethod === "cod" ? "border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400" : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:border-blue-300 dark:hover:border-blue-700"}`}
                                         >
                                             <Banknote className="w-6 h-6 mb-2" />
                                             <span className="font-bold text-sm text-center">Cash on Delivery</span>
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => setPaymentMethod("upi")}
-                                            className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${paymentMethod === "upi" ? "border-blue-600 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-500 hover:border-blue-300"}`}
+                                            onClick={() => setPaymentMethod("razorpay")}
+                                            className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${paymentMethod === "razorpay" ? "border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400" : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:border-blue-300 dark:hover:border-blue-700"}`}
                                         >
                                             <CreditCard className="w-6 h-6 mb-2" />
-                                            <span className="font-bold text-sm text-center">Pay via UPI (0% Fee)</span>
+                                            <span className="font-bold text-sm text-center">Pay Online (Card/UPI)</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPaymentMethod("upi")}
+                                            className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${paymentMethod === "upi" ? "border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400" : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:border-blue-300 dark:hover:border-blue-700"}`}
+                                        >
+                                            <CreditCard className="w-6 h-6 mb-2" />
+                                            <span className="font-bold text-sm text-center">Manual UPI (0% Fee)</span>
                                         </button>
                                     </div>
                                 )}

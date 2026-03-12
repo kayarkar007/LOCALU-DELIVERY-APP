@@ -67,7 +67,7 @@ export default async function Home() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             href="#categories"
-            className="px-8 py-4 bg-white text-gray-900 rounded-full font-black hover:bg-gray-100 transition-colors shadow-[0_0_40px_rgba(255,255,255,0.3)] flex items-center gap-3"
+            className="px-8 py-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-full font-black hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-[0_0_40px_rgba(255,255,255,0.3)] dark:shadow-[0_0_40px_rgba(0,0,0,0.5)] flex items-center gap-3"
           >
             Explore Services <ArrowRight className="w-5 h-5" />
           </motion.a>
@@ -77,17 +77,17 @@ export default async function Home() {
       <div id="categories" className="space-y-8 scroll-mt-24">
         <div className="flex items-end justify-between px-2">
           <div>
-            <h2 className="text-3xl font-black text-gray-900 tracking-tight">Shop by Category</h2>
-            <p className="text-gray-500 font-medium mt-2">What are you looking for today?</p>
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Shop by Category</h2>
+            <p className="text-gray-500 dark:text-gray-400 font-medium mt-2">What are you looking for today?</p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
           {categories.length === 0 ? (
-            <div className="col-span-full flex flex-col items-center justify-center p-16 bg-white rounded-3xl border border-dashed border-gray-300 shadow-sm">
-              <ShoppingBag className="w-16 h-16 text-gray-200 mb-4" />
-              <p className="text-gray-500 font-medium text-lg">No categories found yet.</p>
-              <p className="text-sm text-gray-400 mt-1">Please add some from the Admin Panel.</p>
+            <div className="col-span-full flex flex-col items-center justify-center p-16 bg-white dark:bg-gray-900 rounded-3xl border border-dashed border-gray-300 dark:border-gray-700 shadow-sm">
+              <ShoppingBag className="w-16 h-16 text-gray-200 dark:text-gray-700 mb-4" />
+              <p className="text-gray-500 dark:text-gray-400 font-medium text-lg">No categories found yet.</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Please add some from the Admin Panel.</p>
               <Link
                 href="/admin"
                 className="mt-6 px-6 py-2 bg-gray-900 text-white rounded-full text-sm font-bold hover:bg-gray-800 transition-colors"

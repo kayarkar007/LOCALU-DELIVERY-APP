@@ -55,65 +55,65 @@ export default function SignupPage() {
     };
 
     return (
-        <div className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-xl border border-gray-100 relative">
+        <div className="bg-white dark:bg-gray-900 p-8 md:p-10 rounded-[2.5rem] shadow-xl border border-gray-100 dark:border-gray-800 relative transition-colors duration-300">
             <Link
                 href="/"
-                className="absolute top-8 left-8 p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
+                className="absolute top-8 left-8 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500 dark:text-gray-400"
             >
                 <ArrowLeft className="w-5 h-5" />
             </Link>
 
             <div className="text-center mb-10 mt-6">
-                <h2 className="text-3xl font-black text-gray-900">Create Account</h2>
-                <p className="text-gray-500 font-medium mt-2">Join LocalU Delivery today</p>
+                <h2 className="text-3xl font-black text-gray-900 dark:text-white">Create Account</h2>
+                <p className="text-gray-500 dark:text-gray-400 font-medium mt-2">Join LocalU Delivery today</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Full Name</label>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
                     <input
                         type="text"
                         required
                         value={form.name}
                         onChange={(e) => setForm({ ...form, name: e.target.value })}
-                        className="w-full border border-gray-200 text-gray-900 p-4 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all font-medium"
+                        className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white p-4 rounded-xl focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:border-blue-500 outline-none transition-all font-medium"
                         placeholder="John Doe"
                     />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Email Address</label>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
                     <input
                         type="email"
                         required
                         value={form.email}
                         onChange={(e) => setForm({ ...form, email: e.target.value })}
-                        className="w-full border border-gray-200 text-gray-900 p-4 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all font-medium"
+                        className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white p-4 rounded-xl focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:border-blue-500 outline-none transition-all font-medium"
                         placeholder="you@example.com"
                     />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">WhatsApp Number</label>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">WhatsApp Number</label>
                     <input
                         type="tel"
                         required
                         value={form.whatsapp}
                         onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
-                        className="w-full border border-gray-200 text-gray-900 p-4 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all font-medium"
+                        className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white p-4 rounded-xl focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:border-blue-500 outline-none transition-all font-medium"
                         placeholder="+91 9876543210"
                     />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Password</label>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Password</label>
                     <input
                         type="password"
                         required
                         minLength={6}
                         value={form.password}
                         onChange={(e) => setForm({ ...form, password: e.target.value })}
-                        className="w-full border border-gray-200 text-gray-900 p-4 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all font-medium"
+                        className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white p-4 rounded-xl focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:border-blue-500 outline-none transition-all font-medium"
                         placeholder="At least 6 characters"
                     />
                 </div>
@@ -127,9 +127,9 @@ export default function SignupPage() {
                 </button>
             </form>
 
-            <p className="text-center mt-8 text-gray-500 font-medium">
+            <p className="text-center mt-8 text-gray-500 dark:text-gray-400 font-medium">
                 Already have an account?{" "}
-                <Link href="/login" className="text-blue-600 font-bold hover:underline">
+                <Link href="/login" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">
                     Log in here
                 </Link>
             </p>

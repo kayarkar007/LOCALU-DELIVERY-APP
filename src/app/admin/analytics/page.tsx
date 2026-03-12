@@ -1,0 +1,105 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Loader2, PieChart as PieChartIcon, TrendingUp } from "lucide-react";
+import {
+    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    PieChart, Pie, Cell, Legend
+} from "recharts";
+
+const COLORS = ['#3b82f6', '#f59e0b', '#8b5cf6', '#10b981', '#ef4444'];
+
+export default function AdminAnalytics() {
+    const [loading, setLoading] = useState(true);
+    const [data, setData] = useState<any>(null);
+
+    useEffect(() => {
+        fetch("/api/admin/analytics")
+            .then(res => res.json())
+            .then(res => {
+                if (res.success) setData(res.data);
+                setLoading(false);
+            })
+            .catch(() => setLoading(false));
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="flex h-64 items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            </div>
+        );
+    }
+
+    if (!data) return <div className="p-10 text-center text-gray-500">Failed to load analytics</div>;
+
+    return (
+        <div className="space-y-8 animate-in fade-in">
+            <h1 className="text-3xl font-black text-gray-900 flex items-center gap-4">
+                <TrendingUp className="w-8 h-8 text-blue-600" />
+                Store Analytics
+            </h1>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Revenue Chart */}
+                <div className="bg-white p-6 rounded-3xl border shadow-sm">
+                    <h2 className="text-xl font-bold mb-6 text-gray-800">7-Day Revenue </h2>
+                    <div className="h-80 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={data.revenueChart} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+                                <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                <Tooltip
+                                    formatter={(value: any) => [`₹${value}`, 'Revenue']}
+                                    contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                />
+                                <Area type="monotone" dataKey="revenue" stroke="#2563eb" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Orders Pie Chart */}
+                <div className="bg-white p-6 rounded-3xl border shadow-sm">
+                    <h2 className="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+                        <PieChartIcon className="w-5 h-5 text-gray-400" /> Order Status Distribution
+                    </h2>
+                    {data.statusPie.length === 0 ? (
+                        <div className="h-80 flex items-center justify-center text-gray-400 font-medium">No orders in the last 7 days</div>
+                    ) : (
+                        <div className="h-80 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={data.statusPie}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={80}
+                                        outerRadius={110}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                    >
+                                        {data.statusPie.map((entry: any, index: number) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                    />
+                                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}

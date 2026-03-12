@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useCart } from "@/context/CartContext";
-import { Plus, Minus, ShoppingCart } from "lucide-react";
+import { Plus, Minus, ShoppingCart, Heart } from "lucide-react";
 import Image from "next/image";
 import * as motion from "framer-motion/client";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 export default function ProductListing({ categorySlug }: { categorySlug: string }) {
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [wishlistItems, setWishlistItems] = useState<string[]>([]);
     const { cart, addToCart, updateQuantity } = useCart();
     const { data: session } = useSession();
     const router = useRouter();
@@ -25,6 +26,43 @@ export default function ProductListing({ categorySlug }: { categorySlug: string 
             });
     }, [categorySlug]);
 
+    useEffect(() => {
+        if (session) {
+            fetch('/api/wishlist')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) setWishlistItems(data.data);
+                });
+        }
+    }, [session]);
+
+    const toggleWishlist = async (productId: string) => {
+        if (!session) {
+            toast.error("Please login to add to wishlist.");
+            router.push("/login");
+            return;
+        }
+
+        const isWished = wishlistItems.includes(productId);
+        setWishlistItems(prev => isWished ? prev.filter(id => id !== productId) : [...prev, productId]);
+
+        try {
+            const res = await fetch("/api/wishlist", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ productId })
+            });
+            const data = await res.json();
+            if (!data.success) {
+                setWishlistItems(prev => isWished ? [...prev, productId] : prev.filter(id => id !== productId));
+                toast.error(data.error || "Failed to update wishlist");
+            }
+        } catch (e) {
+            setWishlistItems(prev => isWished ? [...prev, productId] : prev.filter(id => id !== productId));
+            toast.error("Error updating wishlist");
+        }
+    };
+
     if (loading)
         return (
             <div className="py-20 text-center text-gray-500 animate-pulse font-medium">
@@ -34,8 +72,8 @@ export default function ProductListing({ categorySlug }: { categorySlug: string 
 
     if (products.length === 0) {
         return (
-            <div className="py-20 flex flex-col items-center justify-center text-gray-500 bg-white rounded-3xl border border-dashed border-gray-300 shadow-sm">
-                <ShoppingCart className="w-16 h-16 mb-4 text-gray-200" />
+            <div className="py-20 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 rounded-3xl border border-dashed border-gray-300 dark:border-gray-700 shadow-sm">
+                <ShoppingCart className="w-16 h-16 mb-4 text-gray-200 dark:text-gray-700" />
                 <p className="font-medium text-lg">No products found here.</p>
                 <p className="text-sm mt-1">Check back later for new arrivals.</p>
             </div>
@@ -65,9 +103,15 @@ export default function ProductListing({ categorySlug }: { categorySlug: string 
                             hidden: { opacity: 0, y: 20 },
                             show: { opacity: 1, y: 0 }
                         }}
-                        className="flex flex-col justify-between bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-blue-100 transition-all duration-300 group"
+                        className="flex flex-col justify-between bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-blue-100 dark:hover:border-blue-900 transition-all duration-300 group"
                     >
-                        <div className="relative w-full h-48 overflow-hidden bg-gray-50 border-b border-gray-100">
+                        <div className="relative w-full h-48 overflow-hidden bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700">
+                            <button
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(product._id); }}
+                                className="absolute top-3 right-3 z-10 p-2 bg-white/80 dark:bg-gray-950/80 backdrop-blur rounded-full hover:bg-white dark:hover:bg-gray-900 transition-colors shadow-sm"
+                            >
+                                <Heart className={`w-5 h-5 ${wishlistItems.includes(product._id) ? 'fill-red-500 text-red-500' : 'text-gray-400 dark:text-gray-500'}`} />
+                            </button>
                             {product.image ? (
                                 <Image
                                     src={product.image}
@@ -85,42 +129,42 @@ export default function ProductListing({ categorySlug }: { categorySlug: string 
                         <div className="p-6 flex flex-col justify-between flex-grow">
                             <div>
                                 <div className="flex justify-between items-start gap-4">
-                                    <h3 className="font-bold text-xl text-gray-900 leading-tight">
+                                    <h3 className="font-bold text-xl text-gray-900 dark:text-white leading-tight">
                                         {product.name}
                                     </h3>
                                 </div>
-                                <p className="text-sm font-medium text-gray-400 mt-2 bg-gray-50 inline-block px-2 py-1 rounded">
+                                <p className="text-sm font-medium text-gray-400 dark:text-gray-500 mt-2 bg-gray-50 dark:bg-gray-700 inline-block px-2 py-1 rounded">
                                     Unit: {product.unit}
                                 </p>
                             </div>
 
-                            <div className="flex items-center justify-between mt-8 pt-4 border-t border-gray-50">
-                                <div className="font-black text-2xl text-gray-900">
+                            <div className="flex items-center justify-between mt-8 pt-4 border-t border-gray-50 dark:border-gray-700">
+                                <div className="font-black text-2xl text-gray-900 dark:text-white">
                                     ₹{product.price}
                                 </div>
 
                                 {!product.inStock ? (
-                                    <span className="text-sm font-bold text-red-500 px-4 py-2 bg-red-50 rounded-xl">
+                                    <span className="text-sm font-bold text-red-500 dark:text-red-400 px-4 py-2 bg-red-50 dark:bg-red-900/30 rounded-xl">
                                         Out of Stock
                                     </span>
                                 ) : cartItem ? (
-                                    <div className="flex items-center gap-4 bg-gray-50 border border-gray-100 rounded-xl p-1.5 shadow-sm">
+                                    <div className="flex items-center gap-4 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-1.5 shadow-sm">
                                         <button
                                             onClick={() =>
                                                 updateQuantity(product._id, cartItem.quantity - 1)
                                             }
-                                            className="p-1.5 bg-white shadow-sm hover:bg-gray-100 rounded-lg transition-colors text-gray-700"
+                                            className="p-1.5 bg-white dark:bg-gray-800 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300"
                                         >
                                             <Minus className="w-5 h-5" />
                                         </button>
-                                        <span className="w-6 text-center font-bold text-gray-900">
+                                        <span className="w-6 text-center font-bold text-gray-900 dark:text-white">
                                             {cartItem.quantity}
                                         </span>
                                         <button
                                             onClick={() =>
                                                 updateQuantity(product._id, cartItem.quantity + 1)
                                             }
-                                            className="p-1.5 bg-white shadow-sm hover:bg-gray-100 rounded-lg transition-colors text-gray-700"
+                                            className="p-1.5 bg-white dark:bg-gray-800 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300"
                                         >
                                             <Plus className="w-5 h-5" />
                                         </button>

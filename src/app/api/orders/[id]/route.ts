@@ -52,6 +52,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             const finalPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
 
             whatsappRedirectUrl = `https://wa.me/${finalPhone}?text=${encodeURIComponent(message)}`;
+
+            // Mock Email / Push Notification Dispatch
+            console.log(`[EMAIL NOTIFICATION MOCK] Dispatching email to ${updatedOrder.customerName} for order #${orderId}: ${message}`);
+            // if (process.env.RESEND_API_KEY) { await resend.emails.send({...}) }
         }
 
         return NextResponse.json({ success: true, data: updatedOrder, whatsappRedirectUrl }, { status: 200 });
