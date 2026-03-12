@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingCart, LogOut, User as UserIcon, ShieldAlert, Package } from "lucide-react";
+import { ShoppingCart, LogOut, User as UserIcon, ShieldAlert, Package, Store } from "lucide-react";
 import Image from "next/image";
 import { useCart } from "@/context/CartContext";
 import * as motion from "framer-motion/client";
@@ -19,13 +19,9 @@ export default function Header({ onCartClick }: { onCartClick: () => void }) {
                     href="/"
                     className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                 >
-                    <Image
-                        src="/logo.png"
-                        alt="Localu Logo"
-                        width={36}
-                        height={36}
-                        className="rounded-xl shadow-sm"
-                    />
+                    <div className="flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-600 text-white p-2 rounded-xl shadow-sm">
+                        <Store className="w-6 h-6" />
+                    </div>
                     <span className="text-2xl font-black tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                         LOCALU
                     </span>

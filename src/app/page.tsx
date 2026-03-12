@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ShoppingBag, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import * as motion from "framer-motion/client";
+import SearchBar from "@/components/SearchBar";
 
 // Revalidate the page every 10 seconds or force dynamic
 export const revalidate = 0;
@@ -57,6 +58,11 @@ export default async function Home() {
             From fresh daily groceries to instant medicine delivery and home services.
             Experience the super app built for your local neighborhood.
           </p>
+
+          <div className="w-full max-w-2xl mb-10">
+            <SearchBar />
+          </div>
+
           <motion.a
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { User, Phone, MapPin, Package, LogOut, Loader2, ArrowLeft, CheckCircle2, Truck, Clock } from "lucide-react";
+import { User, Phone, MapPin, Package, LogOut, Loader2, ArrowLeft, CheckCircle2, Truck, Clock, Wallet, Star } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 
@@ -13,6 +13,12 @@ export default function ProfilePage() {
     const [orders, setOrders] = useState<any[]>([]);
     const [profile, setProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+
+    const [reviewOrder, setReviewOrder] = useState<string | null>(null);
+    const [rating, setRating] = useState(5);
+    const [comment, setComment] = useState("");
+    const [submittingReview, setSubmittingReview] = useState(false);
+    const [reviews, setReviews] = useState<any[]>([]);
 
     useEffect(() => {
         if (status === "unauthenticated") {
@@ -40,8 +46,42 @@ export default function ProfilePage() {
                     setLoading(false);
                 })
                 .catch(() => setLoading(false));
+
+            fetch("/api/reviews/user")
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        setReviews(data.data);
+                    }
+                });
         }
     }, [status, session, router]);
+
+    const handleSubmitReview = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSubmittingReview(true);
+        try {
+            const res = await fetch("/api/reviews", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orderId: reviewOrder, rating, comment })
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success("Review submitted successfully!");
+                setReviews([...reviews, data.data]);
+                setReviewOrder(null);
+                setRating(5);
+                setComment("");
+            } else {
+                toast.error(data.error || "Failed to submit review");
+            }
+        } catch (error) {
+            toast.error("An error occurred");
+        } finally {
+            setSubmittingReview(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -70,6 +110,14 @@ export default function ProfilePage() {
                             <p className="text-sm text-gray-500 mb-6">{session?.user?.email}</p>
 
                             <div className="space-y-4 text-left">
+                                <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
+                                    <Wallet className="w-5 h-5 text-gray-400 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Localu Wallet</p>
+                                        <p className="text-xl font-black text-blue-600">₹{profile?.walletBalance?.toFixed(2) || "0.00"}</p>
+                                        <p className="text-xs text-gray-400 font-medium mt-1">Use this balance during checkout</p>
+                                    </div>
+                                </div>
                                 <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl">
                                     <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
                                     <div>
@@ -118,6 +166,7 @@ export default function ProfilePage() {
                                     const statusList = ["pending", "processing", "shipped", "delivered"];
                                     const currentStatusIndex = statusList.indexOf(order.status) !== -1 ? statusList.indexOf(order.status) : 0;
                                     const isCancelled = order.status === "cancelled";
+                                    const hasReviewed = reviews.some(r => r.orderId === order._id);
 
                                     return (
                                         <div key={order._id} className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 hover:border-blue-100 transition-all flex flex-col gap-6">
@@ -141,6 +190,16 @@ export default function ProfilePage() {
                                                             month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
                                                         })}
                                                     </p>
+                                                    <div className="mt-2 inline-flex items-center gap-2 bg-gray-50 px-2.5 py-1 rounded-md border border-gray-100">
+                                                        <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">
+                                                            {order.paymentMethod === 'upi' ? 'Paid via UPI' : 'Cash on Delivery'}
+                                                        </span>
+                                                        {order.transactionId && (
+                                                            <span className="text-[10px] text-gray-400 font-mono bg-white px-1.5 py-0.5 rounded border border-gray-200">
+                                                                Txn: {order.transactionId}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -224,6 +283,70 @@ export default function ProfilePage() {
                                                     <span className="text-xl font-black text-blue-600">₹{order.total}</span>
                                                 </div>
                                             </div>
+
+                                            {/* Review Section */}
+                                            {order.status === "delivered" && !hasReviewed && reviewOrder !== order._id && (
+                                                <div className="pt-4 border-t border-dashed border-gray-200">
+                                                    <button
+                                                        onClick={() => setReviewOrder(order._id)}
+                                                        className="w-full bg-blue-50 text-blue-600 font-bold py-3 rounded-xl hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"
+                                                    >
+                                                        <Star className="w-4 h-4" /> Write a Review
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {hasReviewed && (
+                                                <div className="pt-4 border-t border-dashed border-gray-200">
+                                                    <p className="text-sm font-bold text-green-600 flex items-center justify-center gap-1 bg-green-50 py-2 rounded-xl">
+                                                        <CheckCircle2 className="w-4 h-4" /> You've reviewed this order
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {reviewOrder === order._id && (
+                                                <div className="pt-4 border-t border-dashed border-gray-200 animate-in fade-in zoom-in-95 duration-300">
+                                                    <h4 className="font-bold text-gray-900 mb-3 text-sm">Rate Your Order</h4>
+                                                    <form onSubmit={handleSubmitReview} className="space-y-4">
+                                                        <div className="flex gap-2 justify-center">
+                                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                                <button
+                                                                    key={star}
+                                                                    type="button"
+                                                                    onClick={() => setRating(star)}
+                                                                    className={`p-2 rounded-full transition-colors ${rating >= star ? 'text-yellow-400 bg-yellow-50' : 'text-gray-300 hover:text-yellow-200'}`}
+                                                                >
+                                                                    <Star className="w-8 h-8 fill-current" />
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                        <textarea
+                                                            value={comment}
+                                                            onChange={e => setComment(e.target.value)}
+                                                            placeholder="Share your experience (optional)..."
+                                                            className="w-full border border-gray-200 p-3 rounded-xl text-sm focus:ring-4 focus:ring-blue-100 outline-none resize-none bg-gray-50"
+                                                            rows={3}
+                                                        />
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setReviewOrder(null)}
+                                                                className="flex-1 py-3 font-bold text-gray-500 bg-gray-100 rounded-xl hover:bg-gray-200"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                            <button
+                                                                type="submit"
+                                                                disabled={submittingReview}
+                                                                className="flex-1 py-3 font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                                                            >
+                                                                {submittingReview ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Review"}
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            )}
+
                                         </div>
                                     )
                                 })}

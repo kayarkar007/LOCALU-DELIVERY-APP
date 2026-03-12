@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongoose";
 import Order from "@/models/Order";
+import User from "@/models/User";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
@@ -46,7 +47,7 @@ Subtotal: ₹${subtotal.toFixed(2)}
 Delivery Fee: ₹${deliveryFee}
 Platform Fee: ₹${platformFee}
 Tax: ₹${tax.toFixed(2)}
-Total: ₹${total.toFixed(2)}
+${body.discountAmount ? `Discount (-): ₹${body.discountAmount.toFixed(2)}\n` : ''}${body.walletUsed ? `Wallet Applied (-): ₹${body.walletUsed.toFixed(2)}\n` : ''}Total: ₹${body.total.toFixed(2)}
 --------------------------------
 Customer: ${customerName}
 Phone: ${customerPhone}
@@ -93,11 +94,22 @@ Google Maps: https://www.google.com/maps?q=${latitude},${longitude}`;
 
         const order = await Order.create(body);
 
-        const finalWhatsappText = whatsappText + `\n--------------------------------\nOrder Tracking ID: #${order._id.toString().slice(-6).toUpperCase()}`;
+        const finalWhatsappText = whatsappText +
+            `\n--------------------------------
+Payment: ${body.paymentMethod.toUpperCase()}
+${body.transactionId ? `Txn ID: ${body.transactionId}\n` : ''}--------------------------------
+Order Tracking ID: #${order._id.toString().slice(-6).toUpperCase()}`;
 
         const ownerNumber = process.env.OWNER_NUMBER || "917659989336";
         const encodedMessage = encodeURIComponent(finalWhatsappText);
         const redirectUrl = `https://wa.me/${ownerNumber}?text=${encodedMessage}`;
+
+        // Deduct Wallet Balance if used
+        if (body.walletUsed && body.userId) {
+            await User.findByIdAndUpdate(body.userId, {
+                $inc: { walletBalance: -body.walletUsed }
+            });
+        }
 
         return NextResponse.json({ success: true, data: order, redirectUrl });
     } catch (error: any) {

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import { calculatePricing } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import { MapPin, Phone, User, CheckCircle2, Loader2, ArrowLeft, LocateFixed } from "lucide-react";
+import { MapPin, Phone, User, CheckCircle2, Loader2, ArrowLeft, LocateFixed, CreditCard, Banknote, Tag, Wallet } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
@@ -18,6 +18,12 @@ export default function CheckoutPage() {
     const [loading, setLoading] = useState(true);
     const [placingOrder, setPlacingOrder] = useState(false);
     const [locating, setLocating] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState<"cod" | "upi">("cod");
+    const [transactionId, setTransactionId] = useState("");
+
+    const [promoCode, setPromoCode] = useState("");
+    const [appliedPromo, setAppliedPromo] = useState<{ code: string; discountAmount: number } | null>(null);
+    const [applyingPromo, setApplyingPromo] = useState(false);
 
     const [form, setForm] = useState({
         name: "",
@@ -26,6 +32,9 @@ export default function CheckoutPage() {
         lat: 17.3850, // Default mock Hyderabad
         lng: 78.4867
     });
+
+    const [walletBalance, setWalletBalance] = useState(0);
+    const [useWallet, setUseWallet] = useState(false);
 
     useEffect(() => {
         if (!session) {
@@ -44,6 +53,9 @@ export default function CheckoutPage() {
                         whatsapp: data.data.whatsapp || "",
                         address: data.data.address || "",
                     }));
+                    if (data.data.walletBalance) {
+                        setWalletBalance(data.data.walletBalance);
+                    }
                 }
                 setLoading(false);
             })
@@ -108,9 +120,45 @@ export default function CheckoutPage() {
         );
     }
 
+    const prevFinalTotal = Math.max(0, pricing.total - (appliedPromo?.discountAmount || 0));
+    const walletUsed = useWallet ? Math.min(walletBalance, prevFinalTotal) : 0;
+    const finalTotal = Math.max(0, prevFinalTotal - walletUsed);
+
+    const handleApplyPromo = async () => {
+        if (!promoCode.trim()) return;
+        setApplyingPromo(true);
+
+        try {
+            const res = await fetch("/api/promo/validate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: promoCode, cartTotal: pricing.subtotal })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                setAppliedPromo(data.data);
+                toast.success(data.data.message);
+            } else {
+                setAppliedPromo(null);
+                toast.error(data.error);
+            }
+        } catch (error) {
+            toast.error("Failed to validate promo code");
+        } finally {
+            setApplyingPromo(false);
+        }
+    };
+
     const handlePlaceOrder = async (e: React.FormEvent) => {
         e.preventDefault();
         setPlacingOrder(true);
+
+        if (paymentMethod === "upi" && !transactionId.trim()) {
+            toast.error("Please enter the UPI Transaction ID.");
+            setPlacingOrder(false);
+            return;
+        }
 
         const orderData = {
             type: "product",
@@ -130,7 +178,12 @@ export default function CheckoutPage() {
             deliveryFee: pricing.deliveryFee,
             platformFee: pricing.platformFee,
             tax: pricing.tax,
-            total: pricing.total
+            discountAmount: appliedPromo?.discountAmount || 0,
+            promoCode: appliedPromo?.code,
+            walletUsed: walletUsed,
+            total: finalTotal,
+            paymentMethod: finalTotal === 0 ? "wallet" : paymentMethod,
+            transactionId: paymentMethod === "upi" ? transactionId : undefined
         };
 
         try {
@@ -243,6 +296,80 @@ export default function CheckoutPage() {
                                 />
                             </div>
 
+                            {/* Payment Method Section */}
+                            <div className="pt-4 border-t border-gray-100">
+                                <h3 className="text-lg font-bold text-gray-900 mb-4">Payment Method</h3>
+
+                                {walletBalance > 0 && (
+                                    <div className="mb-4 bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Wallet className="w-5 h-5 text-blue-600" />
+                                            <div>
+                                                <p className="font-bold text-gray-900 text-sm">Localu Wallet Balance</p>
+                                                <p className="text-xs text-blue-600 font-bold">Available: ₹{walletBalance.toFixed(2)}</p>
+                                            </div>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" className="sr-only peer" checked={useWallet} onChange={() => setUseWallet(!useWallet)} />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </label>
+                                    </div>
+                                )}
+
+                                {finalTotal > 0 && (
+                                    <div className="grid grid-cols-2 gap-4 mb-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setPaymentMethod("cod")}
+                                            className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${paymentMethod === "cod" ? "border-blue-600 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-500 hover:border-blue-300"}`}
+                                        >
+                                            <Banknote className="w-6 h-6 mb-2" />
+                                            <span className="font-bold text-sm text-center">Cash on Delivery</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPaymentMethod("upi")}
+                                            className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${paymentMethod === "upi" ? "border-blue-600 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-500 hover:border-blue-300"}`}
+                                        >
+                                            <CreditCard className="w-6 h-6 mb-2" />
+                                            <span className="font-bold text-sm text-center">Pay via UPI (0% Fee)</span>
+                                        </button>
+                                    </div>
+                                )}
+
+                                {paymentMethod === "upi" && (
+                                    <div className="bg-gray-50 p-6 rounded-2xl border border-blue-100 animate-in fade-in zoom-in-95 duration-300">
+                                        <p className="text-sm text-gray-600 mb-4 text-center font-medium">Scan the QR code below using any UPI app (GPay, PhonePe, Paytm) to pay <strong className="text-blue-600">₹{finalTotal.toFixed(2)}</strong>.</p>
+
+                                        <div className="flex justify-center mb-6">
+                                            <div className="p-3 bg-white rounded-2xl shadow-sm border border-gray-200">
+                                                {/* Replace with actual UPI ID of the owner */}
+                                                <img
+                                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=7659989336@jupiteraxis&pn=LocaluDelivery&am=${finalTotal.toFixed(2)}&cu=INR`}
+                                                    alt="UPI QR Code"
+                                                    className="w-40 h-40 object-contain"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
+                                                Transaction ID (UTR Number)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required={paymentMethod === "upi"}
+                                                value={transactionId}
+                                                onChange={e => setTransactionId(e.target.value)}
+                                                placeholder="e.g. 312345678901"
+                                                className="w-full border border-gray-200 text-gray-900 p-3 rounded-xl flex-1 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all font-medium bg-white"
+                                            />
+                                            <p className="text-xs text-gray-500 mt-2">Enter the 12-digit transaction ID after successful payment.</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
                             <button
                                 type="submit"
                                 disabled={placingOrder}
@@ -290,9 +417,53 @@ export default function CheckoutPage() {
                             </div>
                         </div>
 
+                        {/* Promo Code Input */}
+                        <div className="mb-6">
+                            <div className="flex gap-2 mb-2">
+                                <input
+                                    type="text"
+                                    disabled={!!appliedPromo}
+                                    value={appliedPromo ? appliedPromo.code : promoCode}
+                                    onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                                    placeholder="Enter Promo Code"
+                                    className="flex-1 border border-gray-200 p-3 rounded-xl uppercase focus:ring-2 focus:ring-blue-100 outline-none"
+                                />
+                                {appliedPromo ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => { setAppliedPromo(null); setPromoCode(""); }}
+                                        className="px-4 bg-red-50 text-red-600 font-bold rounded-xl whitespace-nowrap"
+                                    >
+                                        Remove
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        disabled={applyingPromo || !promoCode.trim()}
+                                        onClick={handleApplyPromo}
+                                        className="px-6 bg-gray-900 text-white font-bold rounded-xl whitespace-nowrap hover:bg-gray-800 disabled:opacity-50"
+                                    >
+                                        {applyingPromo ? <Loader2 className="w-5 h-5 animate-spin" /> : "Apply"}
+                                    </button>
+                                )}
+                            </div>
+                            {appliedPromo && (
+                                <p className="text-xs font-bold text-green-600 flex items-center gap-1">
+                                    <Tag className="w-3.5 h-3.5" /> Promo applied: -₹{appliedPromo.discountAmount.toFixed(2)}
+                                </p>
+                            )}
+                        </div>
+
+                        {useWallet && walletUsed > 0 && (
+                            <div className="flex justify-between items-center text-sm font-bold text-blue-600 mb-2">
+                                <span>Wallet Applied</span>
+                                <span>-₹{walletUsed.toFixed(2)}</span>
+                            </div>
+                        )}
+
                         <div className="flex justify-between items-center font-black text-2xl pt-4 border-t text-gray-900">
                             <span>Total</span>
-                            <span className="text-blue-600">₹{pricing.total.toFixed(2)}</span>
+                            <span className="text-blue-600">₹{finalTotal.toFixed(2)}</span>
                         </div>
                     </div>
                 </div>

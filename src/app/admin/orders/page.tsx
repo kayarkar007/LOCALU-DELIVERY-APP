@@ -39,6 +39,11 @@ export default function AdminOrdersPage() {
             if (data.success) {
                 toast.success("Order status updated!");
                 fetchOrders(); // Refresh table
+
+                // Trigger WhatsApp redirect if available from backend
+                if (data.whatsappRedirectUrl) {
+                    window.open(data.whatsappRedirectUrl, "_blank");
+                }
             } else {
                 toast.error(data.error || "Failed to update status");
             }
@@ -120,7 +125,16 @@ export default function AdminOrdersPage() {
 
                                     <td className="p-4 align-top">
                                         <p className="font-black text-gray-900">₹{order.total}</p>
-                                        <p className="text-xs text-gray-500 mt-1">{order.type === 'service' ? 'Service Request' : `${order.items?.length || 0} items`}</p>
+                                        <div className="flex flex-col gap-1 mt-1">
+                                            <span className="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md self-start">
+                                                {order.paymentMethod === 'upi' ? 'UPI' : 'COD'}
+                                            </span>
+                                            {order.transactionId && (
+                                                <span className="text-[10px] text-gray-500 font-mono">
+                                                    Txn: {order.transactionId}
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
 
                                     <td className="p-4 align-top">

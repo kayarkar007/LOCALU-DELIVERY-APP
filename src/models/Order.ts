@@ -16,7 +16,11 @@ export interface IOrder extends Document {
     deliveryFee: number;
     platformFee: number;
     tax: number;
+    promoCode?: string;
+    walletUsed?: number;
     total: number;
+    paymentMethod?: "cod" | "upi" | "wallet";
+    transactionId?: string;
     customerName: string;
     customerPhone: string;
     address: string;
@@ -49,7 +53,12 @@ const OrderSchema: Schema = new Schema(
         deliveryFee: { type: Number, required: true },
         platformFee: { type: Number, required: true },
         tax: { type: Number, required: true },
+        discountAmount: { type: Number, default: 0 },
+        promoCode: { type: String },
+        walletUsed: { type: Number, default: 0 },
         total: { type: Number, required: true },
+        paymentMethod: { type: String, enum: ["cod", "upi", "wallet"], default: "cod" },
+        transactionId: { type: String },
         customerName: { type: String, required: true },
         customerPhone: { type: String, required: true },
         address: { type: String, required: true },

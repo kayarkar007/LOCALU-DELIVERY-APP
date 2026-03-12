@@ -1,12 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Turbopack root set to silence warning about local vs global lockfiles
-  experimental: {
-    turbo: {
-      root: __dirname,
-    },
-  },
+
   images: {
     remotePatterns: [
       {

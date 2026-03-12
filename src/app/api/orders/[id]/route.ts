@@ -33,7 +33,28 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 });
         }
 
-        return NextResponse.json({ success: true, data: updatedOrder }, { status: 200 });
+        let whatsappRedirectUrl = null;
+
+        if (["processing", "shipped", "delivered"].includes(status) && updatedOrder.customerPhone) {
+            let message = "";
+            const orderId = updatedOrder._id.toString().slice(-6).toUpperCase();
+
+            if (status === "processing") {
+                message = `Hi ${updatedOrder.customerName}, your Localu order #${orderId} is now being processed. We will notify you once it's shipped!`;
+            } else if (status === "shipped") {
+                message = `Hi ${updatedOrder.customerName}, your Localu order #${orderId} has been shipped and is on its way to you!`;
+            } else if (status === "delivered") {
+                message = `Hi ${updatedOrder.customerName}, your Localu order #${orderId} has been delivered. Thank you for shopping with us!`;
+            }
+
+            const cleanPhone = updatedOrder.customerPhone.replace(/\D/g, ''); // Remove non-digits
+            // Assuming Indian numbers default if no country code
+            const finalPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+
+            whatsappRedirectUrl = `https://wa.me/${finalPhone}?text=${encodeURIComponent(message)}`;
+        }
+
+        return NextResponse.json({ success: true, data: updatedOrder, whatsappRedirectUrl }, { status: 200 });
 
     } catch (error: any) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
