@@ -18,8 +18,4 @@ const ReviewSchema = new Schema<IReview>({
     comment: { type: String, maxlength: 500 }
 }, { timestamps: true });
 
-if (mongoose.models.Review) {
-    delete mongoose.models.Review;
-}
-
-export default mongoose.model<IReview>("Review", ReviewSchema);
+export default mongoose.models.Review || mongoose.model<IReview>("Review", ReviewSchema);

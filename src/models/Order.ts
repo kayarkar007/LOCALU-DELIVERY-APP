@@ -26,6 +26,13 @@ export interface IOrder extends Document {
     address: string;
     latitude: number;
     longitude: number;
+    riderId?: string;
+    riderLocation?: {
+        latitude: number;
+        longitude: number;
+    };
+    deliveryStatus: "pending" | "assigned" | "accepted" | "declined" | "picked_up" | "out_for_delivery" | "delivered" | "cancelled";
+    estimatedDeliveryTime?: Date;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -64,12 +71,19 @@ const OrderSchema: Schema = new Schema(
         address: { type: String, required: true },
         latitude: { type: Number, required: true },
         longitude: { type: Number, required: true },
+        riderId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        riderLocation: {
+            latitude: { type: Number },
+            longitude: { type: Number }
+        },
+        deliveryStatus: {
+            type: String,
+            enum: ["pending", "assigned", "accepted", "declined", "picked_up", "out_for_delivery", "delivered", "cancelled"],
+            default: "pending"
+        },
+        estimatedDeliveryTime: { type: Date }
     },
     { timestamps: true }
 );
 
-if (mongoose.models.Order) {
-    delete mongoose.models.Order;
-}
-
-export default mongoose.model<IOrder>("Order", OrderSchema);
+export default mongoose.models.Order || mongoose.model<IOrder>("Order", OrderSchema);
