@@ -16,6 +16,8 @@ export async function GET(req: Request) {
 
         const orders = await Order.find({ createdAt: { $gte: sevenDaysAgo } }).lean();
 
+        // ✅ Bug Fix: Use ISO date string as map key (locale-agnostic) to avoid
+        // mismatch between server locale date strings and chart label strings.
         const revenueByDate: Record<string, number> = {};
         const statusDistribution: Record<string, number> = {
             "pending": 0, "processing": 0, "shipped": 0, "delivered": 0, "cancelled": 0
@@ -27,7 +29,8 @@ export async function GET(req: Request) {
             }
 
             if (order.status === "delivered" || order.status === "shipped" || order.status === "processing") {
-                const dateKey = new Date(order.createdAt).toLocaleDateString("en-US", { month: 'short', day: 'numeric' });
+                // Use YYYY-MM-DD as key — locale-independent
+                const dateKey = new Date(order.createdAt).toISOString().slice(0, 10);
                 revenueByDate[dateKey] = (revenueByDate[dateKey] || 0) + (order.total || 0);
             }
         });
@@ -36,10 +39,13 @@ export async function GET(req: Request) {
         for (let i = 6; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            const dateStr = d.toLocaleDateString("en-US", { month: 'short', day: 'numeric' });
+            // ISO key for lookup
+            const isoKey = d.toISOString().slice(0, 10);
+            // Friendly label for chart display
+            const displayLabel = d.toLocaleDateString("en-IN", { month: 'short', day: 'numeric' });
             chartData.push({
-                date: dateStr,
-                revenue: revenueByDate[dateStr] || 0
+                date: displayLabel,
+                revenue: revenueByDate[isoKey] || 0
             });
         }
 

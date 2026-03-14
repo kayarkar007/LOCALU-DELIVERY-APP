@@ -93,11 +93,34 @@ Address: ${address}
 Google Maps: https://www.google.com/maps?q=${latitude},${longitude}`;
         }
 
-        const order = await Order.create(body);
+        const order = await Order.create({
+            type,
+            userId: body.userId,
+            items: body.items,
+            serviceCategory: body.serviceCategory,
+            serviceDetails: body.serviceDetails,
+            status: "pending",
+            subtotal: body.subtotal,
+            deliveryFee: body.deliveryFee,
+            platformFee: body.platformFee,
+            tax: body.tax,
+            discountAmount: body.discountAmount || 0,
+            promoCode: body.promoCode,
+            walletUsed: body.walletUsed || 0,
+            total: body.total,
+            paymentMethod: body.paymentMethod || "cod",
+            transactionId: body.transactionId,
+            customerName,
+            customerPhone,
+            address,
+            latitude,
+            longitude,
+            deliveryStatus: "pending",
+        });
 
         const finalWhatsappText = whatsappText +
             `\n--------------------------------
-Payment: ${body.paymentMethod.toUpperCase()}
+Payment: ${(body.paymentMethod || "cod").toUpperCase()}
 ${body.transactionId ? `Txn ID: ${body.transactionId}\n` : ''}--------------------------------
 Order Tracking ID: #${order._id.toString().slice(-6).toUpperCase()}`;
 
