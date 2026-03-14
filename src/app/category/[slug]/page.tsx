@@ -24,24 +24,40 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
     const categoryType = category.type as string;
 
     return (
-        <div className="space-y-10 animate-in fade-in duration-500">
-            <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors bg-white dark:bg-gray-800 px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-full hover:shadow-md w-fit hover:-translate-x-1 duration-300">
-                <ChevronLeft className="w-5 h-5" /> Back to Home
+        <div className="space-y-12 animate-in fade-in duration-700">
+            <Link href="/" className="inline-flex items-center gap-3 text-sm font-black text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all glass-card px-8 py-4 border-white/20 premium-shadow rounded-2xl w-fit hover:-translate-x-2 active:scale-95 duration-300 uppercase tracking-widest text-[10px]">
+                <ChevronLeft className="w-4 h-4" /> Back to Store
             </Link>
 
-            <div className="pb-6 border-b border-gray-100 dark:border-gray-800">
-                <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight">{categoryName}</h1>
-                <p className={`text-xs font-black uppercase tracking-widest mt-4 inline-block px-3 py-1.5 rounded-lg ${categoryType === "service" ? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400" : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+            <div className="relative pt-6 pb-12 overflow-hidden">
+                {/* Decorative Background Element */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 rounded-full -mr-32 -mt-32 blur-3xl animate-pulse" />
+                
+                <h1 className="text-5xl md:text-7xl font-black text-slate-900 dark:text-white tracking-tighter leading-[0.9] mb-6">
+                    {categoryName} <span className="text-gradient">Collection</span>
+                </h1>
+                
+                <div className="flex items-center gap-4">
+                    <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border shadow-lg ${
+                        categoryType === "service" 
+                        ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/50" 
+                        : "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50"
                     }`}>
-                    {categoryType} Category
-                </p>
+                        {categoryType}
+                    </span>
+                    <div className="h-px flex-1 bg-gradient-to-r from-slate-200 dark:from-slate-800 to-transparent" />
+                </div>
             </div>
 
-            {categoryType === "product" ? (
-                <ProductListing categorySlug={slug} />
-            ) : (
-                <ServiceForm categoryName={categoryName} />
-            )}
+            <div className="animate-slide-up">
+                {categoryType === "product" ? (
+                    <ProductListing categorySlug={slug} />
+                ) : (
+                    <div className="glass-card p-10 md:p-16 border-white/20 premium-shadow rounded-[3.5rem]">
+                        <ServiceForm categoryName={categoryName} />
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

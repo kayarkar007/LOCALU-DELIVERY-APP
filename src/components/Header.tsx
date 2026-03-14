@@ -24,57 +24,68 @@ export default function Header({ onCartClick }: { onCartClick: () => void }) {
     const ThemeIcon = mounted && isDark ? Sun : Moon;
 
     return (
-        <header className="sticky top-0 z-40 w-full border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md shadow-sm">
-            <div className="container mx-auto flex h-16 items-center justify-between px-3 sm:px-4">
+        <header className="sticky top-0 z-50 w-full glass-card border-b border-white/10 shadow-lg">
+            <div className="container mx-auto flex h-14 sm:h-16 items-center justify-between px-3 sm:px-6">
                 <Link
                     href="/"
-                    className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                    className="flex items-center gap-2 sm:gap-3 hover:scale-105 transition-transform duration-300"
                 >
-                    <div className="flex items-center justify-center p-1 bg-white/50 dark:bg-gray-800/50 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <motion.div 
+                        whileHover={{ rotate: 10 }}
+                        className="flex items-center justify-center p-1.5 sm:p-2 bg-white/10 rounded-xl sm:rounded-2xl shadow-inner border border-white/20"
+                    >
                         <Image
                             src="/logo.png"
                             alt="Localu Logo"
                             width={32}
                             height={32}
-                            className="w-8 h-8 object-contain"
+                            className="w-7 h-7 sm:w-9 sm:h-9 object-contain drop-shadow-md"
                             priority
                         />
-                    </div>
-                    <span className="text-xl sm:text-2xl font-black tracking-tight bg-linear-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
+                    </motion.div>
+                    <span className="text-lg sm:text-2xl md:text-3xl font-black tracking-tighter text-gradient">
                         LOCALU
                     </span>
                 </Link>
 
-                <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-2 sm:gap-5">
                     {session ? (
                         <div className="flex items-center gap-2 mr-2">
                             {session.user.role === "admin" && (
                                 <Link
                                     href="/admin"
-                                    className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-100 text-red-700 text-xs font-bold hover:bg-red-200 transition-colors"
+                                    className="hidden md:flex items-center gap-1.5 px-4 py-2 rounded-full bg-red-500/10 text-red-500 text-xs font-black hover:bg-red-500 hover:text-white transition-all duration-300 border border-red-500/20 shadow-lg shadow-red-500/20"
                                 >
-                                    <ShieldAlert className="w-3.5 h-3.5" /> Admin Panel
+                                    <ShieldAlert className="w-4 h-4" /> Admin Panel
                                 </Link>
                             )}
-                            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                                <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                                    Hey, {session.user.name?.split(" ")[0]}
+                            {session.user.role === "rider" && (
+                                <Link
+                                    href="/rider"
+                                    className="hidden md:flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-black hover:bg-emerald-500 hover:text-white transition-all duration-300 border border-emerald-500/20 shadow-lg shadow-emerald-500/20"
+                                >
+                                    <Package className="w-4 h-4" /> Rider Dashboard
+                                </Link>
+                            )}
+                            <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-inner">
+                                <span className="text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">
+                                    Hey, {session.user.name?.split(" ")[0] || "User"}
                                 </span>
                             </div>
                             <Link
                                 href="/profile"
-                                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                                className="hidden md:flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white transition-all duration-300 border border-blue-500/20 shadow-lg shadow-blue-500/20"
                                 title="My Orders"
                             >
                                 <Package className="w-4 h-4" />
-                                <span className="text-xs font-bold">My Orders</span>
+                                <span className="text-xs font-black uppercase tracking-wider">Orders</span>
                             </Link>
                             <button
                                 onClick={() => signOut()}
-                                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
+                                className="p-2.5 rounded-full hover:bg-red-500/10 text-slate-500 dark:text-slate-400 hover:text-red-500 transition-all duration-300"
                                 title="Sign Out"
                             >
-                                <LogOut className="w-4 h-4" />
+                                <LogOut className="w-5 h-5" />
                             </button>
                         </div>
                     ) : (
@@ -82,43 +93,43 @@ export default function Header({ onCartClick }: { onCartClick: () => void }) {
                             {/* Mobile: keep header compact */}
                             <Link
                                 href="/login"
-                                className="sm:hidden p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors"
+                                className="sm:hidden p-3 rounded-full hover:bg-blue-500/10 text-slate-600 dark:text-slate-300 transition-colors"
                                 title="Log in"
                             >
-                                <UserIcon className="w-5 h-5" />
+                                <UserIcon className="w-6 h-6" />
                             </Link>
 
                             {/* >= sm: show full auth CTAs */}
-                            <div className="hidden sm:flex items-center gap-2 mr-2">
-                                <Link href="/login" className="text-sm font-bold text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors px-2">
+                            <div className="hidden sm:flex items-center gap-3 mr-3">
+                                <Link href="/login" className="text-sm font-black text-slate-600 dark:text-slate-400 hover:text-blue-600 transition-colors px-3 uppercase tracking-widest">
                                     Log in
                                 </Link>
-                                <Link href="/signup" className="text-sm font-bold bg-black dark:bg-white text-white dark:text-black px-4 py-2 rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors shadow-md whitespace-nowrap">
-                                    Sign up
+                                <Link href="/signup" className="text-sm font-black bg-slate-950 dark:bg-white text-white dark:text-slate-950 px-6 py-2.5 rounded-full hover:scale-105 active:scale-95 transition-all shadow-xl shadow-slate-950/20 uppercase tracking-widest">
+                                    Join Now
                                 </Link>
                             </div>
                         </>
                     )}
-                    {/* Same icon (Moon) on server and before mount; switch to Sun/Moon after mount */}
+                    {/* Theme Toggle */}
                     <button
                         onClick={() => setTheme(isDark ? "light" : "dark")}
-                        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
+                        className="p-2.5 rounded-full hover:bg-amber-500/10 text-slate-500 dark:text-slate-400 hover:text-amber-500 transition-all duration-300"
                         title="Toggle Theme"
                     >
                         <ThemeIcon className="w-5 h-5" />
                     </button>
+                    {/* Cart Toggle */}
                     <button
                         onClick={onCartClick}
-                        className="relative flex items-center justify-center rounded-full p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                        className="relative flex items-center justify-center rounded-full p-2.5 bg-blue-600 text-white hover:bg-blue-700 hover:scale-110 active:scale-90 transition-all shadow-lg shadow-blue-600/30"
                     >
-                        <ShoppingCart className="h-5 w-5 text-gray-800 dark:text-gray-200" />
+                        <ShoppingCart className="h-5 w-5" />
                         {itemCount > 0 && (
                             <motion.span
                                 key={itemCount}
                                 initial={{ scale: 0.5, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
-                                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                                className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm shadow-red-500/50"
+                                className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-rose-500 text-[10px] font-black text-white shadow-xl border-2 border-white dark:border-slate-900"
                             >
                                 {itemCount}
                             </motion.span>

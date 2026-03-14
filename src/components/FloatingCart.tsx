@@ -31,18 +31,22 @@ export default function FloatingCart({ onCartClick }: { onCartClick: () => void 
 
     return (
         <motion.button
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: isVisible || itemCount > 0 ? 1 : 0, opacity: isVisible || itemCount > 0 ? 1 : 0 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            initial={{ scale: 0, opacity: 0, y: 50 }}
+            animate={{ scale: isVisible || itemCount > 0 ? 1 : 0, opacity: isVisible || itemCount > 0 ? 1 : 0, y: isVisible || itemCount > 0 ? 0 : 50 }}
+            whileHover={{ scale: 1.1, y: -5 }}
+            whileTap={{ scale: 0.9 }}
             onClick={onCartClick}
-            className="fixed bottom-24 md:bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl shadow-blue-600/30 dark:shadow-blue-900/50 hover:bg-blue-700 transition-colors"
+            className="fixed bottom-24 md:bottom-8 right-6 md:right-10 z-50 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_20px_50px_rgba(37,99,235,0.4)] hover:bg-blue-700 transition-all border border-white/20 backdrop-blur-lg"
         >
-            <ShoppingCart className="h-6 w-6" />
+            <ShoppingCart className="h-7 w-7" />
             {itemCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white shadow-sm ring-2 ring-white dark:ring-gray-900">
+                <motion.span 
+                    initial={{ scale: 0.5 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-rose-500 text-xs font-black text-white shadow-xl ring-4 ring-white dark:ring-slate-900"
+                >
                     {itemCount}
-                </span>
+                </motion.span>
             )}
         </motion.button>
     );

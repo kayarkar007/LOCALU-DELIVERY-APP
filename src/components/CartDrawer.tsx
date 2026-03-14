@@ -33,29 +33,33 @@ export default function CartDrawer({
                         initial={{ x: "100%" }}
                         animate={{ x: 0 }}
                         exit={{ x: "100%" }}
-                        transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                        className="fixed inset-y-0 right-0 z-50 w-full max-w-full sm:max-w-sm bg-white dark:bg-gray-900 shadow-2xl dark:shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col"
+                        transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                        className="fixed inset-y-0 right-0 z-50 w-full max-w-full sm:max-w-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl shadow-[0_0_50px_rgba(0,0,0,0.1)] flex flex-col border-l border-white/20"
                     >
-                        <div className="flex items-center justify-between p-3 sm:p-4 md:p-5 border-b dark:border-gray-800">
-                            <h2 className="text-base sm:text-lg md:text-xl font-bold flex items-center gap-2 dark:text-white">
-                                <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 shrink-0" /> Your Cart
+                        <div className="flex items-center justify-between p-6 md:p-8 border-b border-white/10">
+                            <h2 className="text-xl md:text-2xl font-black flex items-center gap-3 text-slate-900 dark:text-white uppercase tracking-tight">
+                                <ShoppingBag className="w-6 h-6 text-blue-600 dark:text-blue-400" /> Your Cart
                             </h2>
                             <button
                                 onClick={onClose}
-                                className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors dark:text-gray-300"
+                                className="p-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-2xl transition-all active:scale-95"
                             >
-                                <X className="w-5 h-5" />
+                                <X className="w-5 h-5 text-slate-600 dark:text-slate-300" />
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-5 space-y-3 sm:space-y-4">
+                        <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
                             {cart.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
-                                    <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-full mb-4">
-                                        <ShoppingBag className="w-12 h-12 text-gray-300 dark:text-gray-600" />
-                                    </div>
-                                    <p className="font-medium">Your cart is empty.</p>
-                                    <p className="text-sm mt-1">Add some products to see them here.</p>
+                                <div className="flex flex-col items-center justify-center h-full text-slate-500">
+                                    <motion.div 
+                                        initial={{ scale: 0.8 }}
+                                        animate={{ scale: 1 }}
+                                        className="bg-slate-100 dark:bg-slate-800 p-10 rounded-full mb-6 border border-white/10 shadow-inner"
+                                    >
+                                        <ShoppingBag className="w-16 h-16 text-slate-300 dark:text-slate-600" />
+                                    </motion.div>
+                                    <p className="font-black text-xl text-slate-900 dark:text-white">Your cart is empty.</p>
+                                    <p className="text-sm mt-2 opacity-80">Add some products to see them here.</p>
                                 </div>
                             ) : (
                                 <motion.div
@@ -63,9 +67,9 @@ export default function CartDrawer({
                                     animate="show"
                                     variants={{
                                         hidden: {},
-                                        show: { transition: { staggerChildren: 0.1 } }
+                                        show: { transition: { staggerChildren: 0.05 } }
                                     }}
-                                    className="space-y-4"
+                                    className="space-y-6"
                                 >
                                     {cart.map((item) => (
                                         <motion.div
@@ -74,30 +78,38 @@ export default function CartDrawer({
                                                 show: { opacity: 1, x: 0 }
                                             }}
                                             key={item.productId}
-                                            className="flex flex-col gap-3 p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-2xl"
+                                            className="group flex flex-col gap-4 p-5 bg-white/40 dark:bg-slate-800/40 border border-white/10 rounded-[1.5rem] shadow-sm hover:shadow-xl transition-all duration-300"
                                         >
-                                            <div className="flex justify-between font-semibold">
-                                                <span className="text-gray-800 dark:text-gray-100">{item.name}</span>
-                                                <span className="dark:text-white">₹{(item.price * item.quantity).toFixed(2)}</span>
+                                            <div className="flex justify-between items-start">
+                                                <span className="font-black text-slate-900 dark:text-white text-lg leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                    {item.name}
+                                                </span>
+                                                <span className="font-black text-slate-900 dark:text-white text-lg shrink-0">
+                                                    ₹{(item.price * item.quantity).toFixed(0)}
+                                                </span>
                                             </div>
-                                            <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                                                <span>₹{item.price} each</span>
-                                                <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-900 border dark:border-gray-700 rounded-xl p-1">
-                                                    <button
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest px-2 py-0.5 bg-slate-100 dark:bg-slate-900/50 rounded">
+                                                    ₹{item.price} / unit
+                                                </span>
+                                                <div className="flex items-center gap-4 bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white rounded-xl p-1.5 shadow-xl shadow-slate-950/20">
+                                                    <motion.button
+                                                        whileTap={{ scale: 0.8 }}
                                                         onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                                                        className="p-1 hover:bg-white dark:hover:bg-gray-800 hover:shadow-sm rounded transition-all"
+                                                        className="p-1 hover:bg-white/10 dark:hover:bg-slate-950/10 rounded-lg transition-colors"
                                                     >
-                                                        <Minus className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                                                    </button>
-                                                    <span className="w-5 text-center font-bold text-gray-800 dark:text-gray-100">
+                                                        <Minus className="w-4 h-4" />
+                                                    </motion.button>
+                                                    <span className="w-5 text-center font-black text-md">
                                                         {item.quantity}
                                                     </span>
-                                                    <button
+                                                    <motion.button
+                                                        whileTap={{ scale: 0.8 }}
                                                         onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                                                        className="p-1 hover:bg-white dark:hover:bg-gray-800 hover:shadow-sm rounded transition-all"
+                                                        className="p-1 hover:bg-white/10 dark:hover:bg-slate-950/10 rounded-lg transition-colors"
                                                     >
-                                                        <Plus className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                                                    </button>
+                                                        <Plus className="w-4 h-4" />
+                                                    </motion.button>
                                                 </div>
                                             </div>
                                         </motion.div>
@@ -107,37 +119,29 @@ export default function CartDrawer({
                         </div>
 
                         {cart.length > 0 && (
-                            <div className="p-3 sm:p-4 md:p-5 bg-white dark:bg-gray-900 border-t dark:border-gray-800 rounded-t-2xl sm:rounded-t-3xl shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] dark:shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.5)]">
-                                <div className="space-y-2 text-sm text-gray-500 dark:text-gray-400 font-medium mb-4">
+                            <div className="p-6 md:p-8 bg-white/40 dark:bg-slate-900/40 border-t border-white/10 backdrop-blur-md rounded-t-[2.5rem] shadow-[0_-20px_50px_rgba(0,0,0,0.05)]">
+                                <div className="space-y-4 text-xs font-black text-slate-400 uppercase tracking-widest mb-8">
                                     <div className="flex justify-between">
                                         <span>Subtotal</span>
-                                        <span className="text-gray-800 dark:text-gray-300">₹{pricing.subtotal.toFixed(2)}</span>
+                                        <span className="text-slate-900 dark:text-slate-300">₹{pricing.subtotal.toFixed(0)}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span>Delivery Fee</span>
-                                        <span className="text-gray-800 dark:text-gray-300">₹{pricing.deliveryFee.toFixed(2)}</span>
+                                        <span>Extras (Tax/Delivery)</span>
+                                        <span className="text-slate-900 dark:text-slate-300">₹{(pricing.deliveryFee + pricing.platformFee + pricing.tax).toFixed(0)}</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span>Platform Fee</span>
-                                        <span className="text-gray-800 dark:text-gray-300">₹{pricing.platformFee.toFixed(2)}</span>
+                                    <div className="pt-4 border-t border-white/5 flex justify-between font-black text-2xl text-slate-900 dark:text-white normal-case tracking-tight">
+                                        <span>Total Amount</span>
+                                        <span className="text-gradient">₹{pricing.total.toFixed(0)}</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span>Tax (5%)</span>
-                                        <span className="text-gray-800 dark:text-gray-300">₹{pricing.tax.toFixed(2)}</span>
-                                    </div>
-                                </div>
-                                <div className="flex justify-between font-black text-xl pt-3 border-t dark:border-gray-800 text-gray-900 dark:text-white mb-6">
-                                    <span>Total</span>
-                                    <span>₹{pricing.total.toFixed(2)}</span>
                                 </div>
                                 <Link
                                     href={session ? "/checkout" : "/login"}
                                     onClick={(e) => {
                                         onClose();
                                     }}
-                                    className="w-full flex justify-center items-center bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-transform hover:scale-[1.02] shadow-lg shadow-blue-600/30 dark:shadow-blue-900/50"
+                                    className="w-full h-16 flex justify-center items-center bg-blue-600 text-white font-black rounded-2xl shadow-2xl shadow-blue-500/40 hover:bg-blue-700 hover:scale-[1.02] transform transition-all active:scale-95 uppercase tracking-widest text-sm"
                                 >
-                                    Proceed to Checkout
+                                    Complete Checkout
                                 </Link>
                             </div>
                         )}
