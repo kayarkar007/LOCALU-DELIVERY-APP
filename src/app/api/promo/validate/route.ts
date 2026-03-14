@@ -50,6 +50,9 @@ export async function POST(req: Request) {
         // Ensure discount doesn't exceed cart total
         discountAmount = Math.min(discountAmount, cartTotal);
 
+        // ✅ Bug Fix: Increment usedCount so usage limits are enforced
+        await PromoCode.findByIdAndUpdate(promo._id, { $inc: { usedCount: 1 } });
+
         return NextResponse.json({
             success: true,
             data: {

@@ -4,11 +4,11 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import type { Session } from "next-auth";
 
 type AuthResult =
-  | { session: Session }
-  | { response: NextResponse<{ success: false; error: string }> };
+  | { session: Session; response?: never }
+  | { session?: never; response: NextResponse };
 
 function unauthorized(message = "Unauthorized", status = 401) {
-  return NextResponse.json({ success: false, error: message }, { status });
+  return NextResponse.json({ success: false as const, error: message }, { status });
 }
 
 export async function requireUser(): Promise<AuthResult> {
@@ -23,4 +23,3 @@ export async function requireAdmin(): Promise<AuthResult> {
   if (session.user.role !== "admin") return { response: unauthorized("Forbidden", 403) };
   return { session };
 }
-
