@@ -16,6 +16,7 @@ export default function AdminProducts() {
         unit: "",
         categorySlug: "",
         image: "",
+        description: "",
     });
 
     const fetchData = async () => {
@@ -57,7 +58,7 @@ export default function AdminProducts() {
             body: JSON.stringify(payload),
         });
         if (res.ok) {
-            setFormData({ name: "", price: "", unit: "", categorySlug: "", image: "" });
+        setFormData({ name: "", price: "", unit: "", categorySlug: "", image: "", description: "" });
             setIsAdding(false);
             setEditingId(null);
             fetchData();
@@ -71,6 +72,7 @@ export default function AdminProducts() {
             unit: product.unit,
             categorySlug: product.categorySlug,
             image: product.image || "",
+            description: product.description || "",
         });
         setEditingId(product._id);
         setIsAdding(true);
@@ -156,7 +158,7 @@ export default function AdminProducts() {
                                 ))}
                             </select>
                         </div>
-                        <div>
+                        <div className="md:col-span-2">
                             <label className="block text-sm font-bold mb-2 text-gray-700 dark:text-gray-300">Image URL</label>
                             <input
                                 type="url"
@@ -164,6 +166,16 @@ export default function AdminProducts() {
                                 onChange={(e) => setFormData({ ...formData, image: e.target.value })}
                                 className="w-full bg-white dark:bg-gray-800 border dark:border-gray-700 p-4 rounded-xl text-gray-900 dark:text-white focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 outline-none transition-all font-medium"
                                 placeholder="https://images.unsplash.com/..."
+                            />
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-bold mb-2 text-gray-700 dark:text-gray-300">Description (optional)</label>
+                            <textarea
+                                value={formData.description}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                rows={2}
+                                className="w-full bg-white dark:bg-gray-800 border dark:border-gray-700 p-4 rounded-xl text-gray-900 dark:text-white focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 outline-none transition-all font-medium resize-none"
+                                placeholder="Short product description shown on product cards..."
                             />
                         </div>
                     </div>
