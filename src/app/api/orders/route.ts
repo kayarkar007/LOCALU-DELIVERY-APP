@@ -16,7 +16,7 @@ export async function POST(request: Request) {
             body.userId = session.user.id;
         }
 
-        const { type, customerName, customerPhone, address, latitude, longitude } = body;
+        const { type, customerName, customerPhone, address, latitude, longitude, tipAmount } = body;
 
         let subtotal = 0;
         const deliveryFee = 30;
@@ -32,12 +32,13 @@ export async function POST(request: Request) {
             });
             tax = subtotal * 0.05;
 
-            const total = subtotal + deliveryFee + platformFee + tax;
+            const total = subtotal + deliveryFee + platformFee + tax + (tipAmount || 0);
 
             body.subtotal = subtotal;
             body.deliveryFee = deliveryFee;
             body.platformFee = platformFee;
             body.tax = tax;
+            body.tipAmount = tipAmount || 0;
             body.total = total;
 
             whatsappText = `New Product Order:
@@ -48,7 +49,7 @@ Subtotal: ₹${subtotal.toFixed(2)}
 Delivery Fee: ₹${deliveryFee}
 Platform Fee: ₹${platformFee}
 Tax: ₹${tax.toFixed(2)}
-${body.discountAmount ? `Discount (-): ₹${body.discountAmount.toFixed(2)}\n` : ''}${body.walletUsed ? `Wallet Applied (-): ₹${body.walletUsed.toFixed(2)}\n` : ''}Total: ₹${body.total.toFixed(2)}
+${body.discountAmount ? `Discount (-): ₹${body.discountAmount.toFixed(2)}\n` : ''}${body.walletUsed ? `Wallet Applied (-): ₹${body.walletUsed.toFixed(2)}\n` : ''}${body.tipAmount ? `Rider Tip (+): ₹${body.tipAmount.toFixed(2)}\n` : ''}Total: ₹${body.total.toFixed(2)}
 --------------------------------
 Customer: ${customerName}
 Phone: ${customerPhone}
@@ -67,12 +68,13 @@ Google Maps: https://www.google.com/maps?q=${latitude},${longitude}`;
             }
 
             tax = subtotal * 0.05;
-            const total = subtotal + deliveryFee + platformFee + tax;
+            const total = subtotal + deliveryFee + platformFee + tax + (tipAmount || 0);
 
             body.subtotal = subtotal;
             body.deliveryFee = deliveryFee;
             body.platformFee = platformFee;
             body.tax = tax;
+            body.tipAmount = tipAmount || 0;
             body.total = total;
 
             const detailsText = Object.entries(serviceDetails || {})
@@ -86,7 +88,7 @@ Details:
 ${detailsText}
 --------------------------------
 Estimated Price: ₹${total.toFixed(2)}
---------------------------------
+${body.tipAmount ? `Rider Tip (+): ₹${body.tipAmount.toFixed(2)}\n` : ''}--------------------------------
 Customer: ${customerName}
 Phone: ${customerPhone}
 Address: ${address}
@@ -108,6 +110,7 @@ Google Maps: https://www.google.com/maps?q=${latitude},${longitude}`;
             promoCode: body.promoCode,
             walletUsed: body.walletUsed || 0,
             total: body.total,
+            tipAmount: body.tipAmount || 0,
             paymentMethod: body.paymentMethod || "cod",
             transactionId: body.transactionId,
             customerName,

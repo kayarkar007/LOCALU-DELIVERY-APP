@@ -13,16 +13,16 @@ export default function AdminPromoPage() {
         code: "", discountType: "percentage", discountValue: 0, minOrderAmount: 0, usageLimit: 0
     });
 
-    useEffect(() => {
-        fetchPromos();
-    }, []);
-
     const fetchPromos = async () => {
         const res = await fetch("/api/admin/promo");
         const data = await res.json();
         if (data.success) setPromos(data.data);
         setLoading(false);
     };
+
+    useEffect(() => {
+        fetchPromos();
+    }, []);
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();

@@ -48,7 +48,7 @@ export default function SignupPage() {
                 router.refresh();
             }
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
         } catch (error) {
             toast.error("Something went wrong");
             setLoading(false);

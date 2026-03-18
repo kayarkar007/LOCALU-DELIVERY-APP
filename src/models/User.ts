@@ -7,6 +7,12 @@ const UserSchema = new mongoose.Schema(
         password: { type: String, required: true },
         whatsapp: { type: String, required: true },
         address: { type: String },
+        savedAddresses: [{
+            label: { type: String, required: true },
+            address: { type: String, required: true },
+            lat: { type: Number, required: true },
+            lng: { type: Number, required: true }
+        }],
         role: {
             type: String,
             enum: ["user", "admin", "rider"],

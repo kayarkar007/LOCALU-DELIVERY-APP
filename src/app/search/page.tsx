@@ -12,7 +12,7 @@ async function performSearch(params: any) {
         await connectToDatabase();
         if (!params.q && !params.minPrice && !params.maxPrice) return [];
 
-        let dbQuery: any = {};
+        const dbQuery: any = {};
 
         if (params.q) {
             const searchRegex = new RegExp(params.q, "i"); // Case-insensitive

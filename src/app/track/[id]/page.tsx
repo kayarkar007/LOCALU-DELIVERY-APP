@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useRef } from "react";
 import dynamic from "next/dynamic";
-import { Package, MapPin, Truck, CheckCircle, Navigation, Loader2, Clock, Phone } from "lucide-react";
-import { motion } from "framer-motion";
+import { Package, MapPin, Truck, CheckCircle, Navigation, Loader2, Clock, Phone, MessageSquare, Send } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import "leaflet/dist/leaflet.css";
 
 // Dynamic import for Leaflet components to avoid SSR issues
@@ -20,11 +21,105 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ id: st
     const [eta, setEta] = useState<string>("Calculating...");
     const [L, setL] = useState<any>(null);
 
+    const [animatedRiderLoc, setAnimatedRiderLoc] = useState<{lat: number, lng: number} | null>(null);
+    const currentLocRef = useRef<{lat: number, lng: number} | null>(null);
+
+    const prevStatusRef = useRef<string | null>(null);
+    const prevDeliveryStatusRef = useRef<string | null>(null);
+
+    const [supportOpen, setSupportOpen] = useState(false);
+    const [supportMsg, setSupportMsg] = useState("");
+    const [supportSending, setSupportSending] = useState(false);
+
+    const handleSupportSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!supportMsg.trim()) return;
+        setSupportSending(true);
+        // Mock API call delay
+        setTimeout(() => {
+            toast.success("Support ticket created. We will reach out shortly!", { icon: "🎫" });
+            setSupportMsg("");
+            setSupportOpen(false);
+            setSupportSending(false);
+        }, 1500);
+    };
+
     useEffect(() => {
         import("leaflet").then((leaflet) => {
             setL(leaflet);
         });
+
+        // Request Push Notification Permission
+        if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
     }, []);
+
+    // Interpolate rider location marker
+    useEffect(() => {
+        if (order?.riderLocation?.latitude && order?.riderLocation?.longitude) {
+            const targetLoc = { lat: order.riderLocation.latitude, lng: order.riderLocation.longitude };
+            
+            if (!currentLocRef.current) {
+                currentLocRef.current = targetLoc;
+                setAnimatedRiderLoc(targetLoc);
+                return;
+            }
+
+            const startLoc = { ...currentLocRef.current };
+            const startTime = Date.now();
+            const duration = 9000;
+
+            let animationFrameId: number;
+
+            const animateMarker = () => {
+                const now = Date.now();
+                const progress = Math.min((now - startTime) / duration, 1);
+                const easeProgress = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+                const currentFrameLoc = {
+                    lat: startLoc.lat + (targetLoc.lat - startLoc.lat) * easeProgress,
+                    lng: startLoc.lng + (targetLoc.lng - startLoc.lng) * easeProgress
+                };
+
+                currentLocRef.current = currentFrameLoc;
+                setAnimatedRiderLoc(currentFrameLoc);
+
+                if (progress < 1) {
+                    animationFrameId = requestAnimationFrame(animateMarker);
+                }
+            };
+
+            animationFrameId = requestAnimationFrame(animateMarker);
+            return () => cancelAnimationFrame(animationFrameId);
+        }
+    }, [order?.riderLocation?.latitude, order?.riderLocation?.longitude]);
+
+    // Push Notifications for Status Changes
+    useEffect(() => {
+        if (!order) return;
+
+        if (prevStatusRef.current && prevStatusRef.current !== order.status) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification("Order Update", {
+                    body: `Your order is now ${order.status.replace('_', ' ')}!`,
+                    icon: "/logo.png"
+                });
+            }
+        }
+
+        if (prevDeliveryStatusRef.current && prevDeliveryStatusRef.current !== order.deliveryStatus) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification("Delivery Update", {
+                    body: `Delivery status updated to ${order.deliveryStatus.replace('_', ' ')}!`,
+                    icon: "/logo.png"
+                });
+            }
+        }
+
+        prevStatusRef.current = order.status;
+        prevDeliveryStatusRef.current = order.deliveryStatus;
+    }, [order?.status, order?.deliveryStatus]);
 
     const fetchOrder = async () => {
         try {
@@ -76,8 +171,22 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ id: st
 
     if (loading || !L) {
         return (
-            <div className="flex items-center justify-center min-h-[60vh]">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <div className="max-w-6xl mx-auto px-4 py-6 sm:py-10 space-y-6 sm:space-y-10">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+                    <div className="space-y-4 w-full md:w-1/2">
+                        <div className="h-4 w-24 bg-slate-100 dark:bg-slate-900 rounded-full animate-pulse" />
+                        <div className="h-12 md:h-16 w-3/4 bg-slate-100 dark:bg-slate-900 rounded-3xl animate-pulse" />
+                        <div className="h-3 w-32 bg-slate-100 dark:bg-slate-900 rounded-full animate-pulse" />
+                    </div>
+                    <div className="h-20 w-48 bg-slate-100 dark:bg-slate-900 rounded-3xl animate-pulse" />
+                </div>
+                <div className="grid lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2 relative bg-slate-100 dark:bg-slate-900 rounded-3xl md:rounded-[3rem] h-[400px] sm:h-[500px] lg:h-[600px] animate-pulse" />
+                    <div className="space-y-6 md:space-y-8">
+                        <div className="h-[400px] bg-slate-100 dark:bg-slate-900 rounded-3xl md:rounded-[3rem] animate-pulse" />
+                        <div className="h-32 bg-slate-100 dark:bg-slate-900 rounded-2xl lg:rounded-[2.5rem] animate-pulse" />
+                    </div>
+                </div>
             </div>
         );
     }
@@ -101,7 +210,7 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ id: st
     }) : null;
 
     return (
-        <div className="max-w-6xl mx-auto px-4 py-10 space-y-10 animate-slide-up">
+        <div className="max-w-6xl mx-auto px-4 py-6 sm:py-10 space-y-6 sm:space-y-10 animate-slide-up">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div className="space-y-2">
                     <motion.div 
@@ -132,7 +241,7 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ id: st
 
             <div className="grid lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
-                    <div className="relative bg-slate-100 dark:bg-slate-950 rounded-[3rem] overflow-hidden shadow-2xl shadow-slate-950/20 border-4 border-white dark:border-slate-800 h-[600px] group">
+                    <div className="relative bg-slate-100 dark:bg-slate-950 rounded-3xl md:rounded-[3rem] overflow-hidden shadow-2xl shadow-slate-950/20 border-4 border-white dark:border-slate-800 h-[400px] sm:h-[500px] lg:h-[600px] group">
                         {typeof window !== "undefined" && (
                             <MapContainer 
                                 center={[order.latitude, order.longitude]} 
@@ -147,8 +256,8 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ id: st
                                 <Marker position={[order.latitude, order.longitude]} icon={userIcon}>
                                     <Popup>Delivery Address</Popup>
                                 </Marker>
-                                {order.riderLocation && (
-                                    <Marker position={[order.riderLocation.latitude, order.riderLocation.longitude]} icon={riderIcon}>
+                                {animatedRiderLoc && (
+                                    <Marker position={[animatedRiderLoc.lat, animatedRiderLoc.lng]} icon={riderIcon}>
                                         <Popup>Rider is here</Popup>
                                     </Marker>
                                 )}
@@ -161,8 +270,8 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ id: st
                     </div>
                 </div>
 
-                <div className="space-y-8">
-                    <div className="glass-card p-8 md:p-10 border-white/20 premium-shadow rounded-[3rem]">
+                <div className="space-y-6 md:space-y-8">
+                    <div className="glass-card p-5 sm:p-8 md:p-10 border-white/20 premium-shadow rounded-3xl md:rounded-[3rem]">
                         <h3 className="font-black text-slate-900 dark:text-white mb-10 uppercase text-xs tracking-[0.2em] flex items-center gap-2">
                              Journey <span className="w-2 h-2 rounded-full bg-blue-600" />
                         </h3>
@@ -216,20 +325,62 @@ export default function OrderTrackingPage({ params }: { params: Promise<{ id: st
 
                     <motion.div 
                         whileHover={{ y: -5 }}
-                        className="bg-slate-950 dark:bg-white text-white dark:text-slate-950 rounded-[2.5rem] p-8 shadow-2xl transition-all"
+                        className="bg-slate-950 dark:bg-white text-white dark:text-slate-950 rounded-3xl lg:rounded-[2.5rem] p-6 lg:p-8 shadow-2xl transition-all relative overflow-hidden group"
                     >
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="bg-white/10 dark:bg-slate-900/10 p-3 rounded-2xl">
-                                <Phone className="w-6 h-6" />
+                        {/* Interactive Toggle */}
+                        <div className="flex items-center justify-between mb-6 relative z-10 cursor-pointer" onClick={() => setSupportOpen(!supportOpen)}>
+                            <div className="flex items-center gap-4">
+                                <div className="bg-white/10 dark:bg-slate-900/10 p-3 rounded-2xl group-hover:bg-blue-600 transition-colors group-hover:text-white">
+                                    <MessageSquare className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Priority Help</p>
+                                    <p className="font-black text-xl italic">Request Support</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Priority Help</p>
-                                <p className="font-black text-xl italic">+91 99999 88888</p>
+                            <div className={`w-8 h-8 rounded-full border-2 border-white/20 dark:border-slate-900/20 flex items-center justify-center transition-transform ${supportOpen ? 'rotate-180' : ''}`}>
+                                <span>↓</span>
                             </div>
                         </div>
-                        <p className="text-xs opacity-70 leading-relaxed font-bold">
-                            Our 24/7 dedicated support is ready to assist you with any concerns.
-                        </p>
+
+                        {/* Collapsed Description */}
+                        {!supportOpen && (
+                            <p className="text-xs opacity-70 leading-relaxed font-bold relative z-10">
+                                Issue with your order? Our 24/7 dedicated support is ready to assist you.
+                            </p>
+                        )}
+
+                        {/* Expanded Form */}
+                        <AnimatePresence>
+                            {supportOpen && (
+                                <motion.form 
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: "auto" }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    onSubmit={handleSupportSubmit}
+                                    className="relative z-10 space-y-4"
+                                >
+                                    <textarea
+                                        required
+                                        value={supportMsg}
+                                        onChange={(e) => setSupportMsg(e.target.value)}
+                                        placeholder="Briefly describe your issue..."
+                                        className="w-full bg-white/5 dark:bg-slate-900/5 border border-white/10 dark:border-slate-900/10 rounded-2xl p-4 text-sm font-bold resize-none outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-slate-900/20 placeholder:text-white/30 dark:placeholder:text-slate-900/30 text-white dark:text-slate-900"
+                                        rows={3}
+                                    />
+                                    <button 
+                                        type="submit" 
+                                        disabled={supportSending}
+                                        className="w-full bg-blue-600 text-white p-4 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors disabled:opacity-50"
+                                    >
+                                        {supportSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /> Submit Ticket</>}
+                                    </button>
+                                </motion.form>
+                            )}
+                        </AnimatePresence>
+
+                        {/* Deco Element */}
+                        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/5 dark:bg-slate-900/5 rounded-full blur-2xl" />
                     </motion.div>
                 </div>
             </div>

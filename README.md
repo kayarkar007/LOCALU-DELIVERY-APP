@@ -25,11 +25,7 @@ Localu is a premium hyperlocal delivery platform built with Next.js, featuring g
 
 ### Prerequisites
 
-Create a `.env.local` file with the following:
-```env
-MONGODB_URI=your_mongodb_uri
-NEXTAUTH_SECRET=your_auth_secret
-NEXTAUTH_URL=http://localhost:3000
+
 ```
 
 ### Installation

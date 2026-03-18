@@ -19,6 +19,7 @@ export interface IOrder extends Document {
     promoCode?: string;
     walletUsed?: number;
     total: number;
+    tipAmount?: number;
     paymentMethod?: "cod" | "upi" | "wallet" | "razorpay";
     transactionId?: string;
     customerName: string;
@@ -64,6 +65,7 @@ const OrderSchema: Schema = new Schema(
         promoCode: { type: String },
         walletUsed: { type: Number, default: 0 },
         total: { type: Number, required: true },
+        tipAmount: { type: Number, default: 0 },
         paymentMethod: { type: String, enum: ["cod", "upi", "wallet", "razorpay"], default: "cod" },
         transactionId: { type: String },
         customerName: { type: String, required: true },

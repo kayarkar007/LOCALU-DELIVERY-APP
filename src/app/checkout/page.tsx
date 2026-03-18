@@ -9,7 +9,7 @@ import Link from "next/link";
 import Script from "next/script";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function CheckoutPage() {
     const router = useRouter();
@@ -22,10 +22,13 @@ export default function CheckoutPage() {
     const [locating, setLocating] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<"cod" | "upi" | "wallet">("cod");
     const [transactionId, setTransactionId] = useState("");
+    const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+    const [selectingAddress, setSelectingAddress] = useState(false);
 
     const [promoCode, setPromoCode] = useState("");
     const [appliedPromo, setAppliedPromo] = useState<{ code: string; discountAmount: number } | null>(null);
     const [applyingPromo, setApplyingPromo] = useState(false);
+    const [tipAmount, setTipAmount] = useState<number>(0);
 
     const [form, setForm] = useState({
         name: "",
@@ -57,6 +60,9 @@ export default function CheckoutPage() {
                     }));
                     if (data.data.walletBalance) {
                         setWalletBalance(data.data.walletBalance);
+                    }
+                    if (data.data.savedAddresses) {
+                        setSavedAddresses(data.data.savedAddresses);
                     }
                 }
                 setLoading(false);
@@ -109,7 +115,9 @@ export default function CheckoutPage() {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                <div className="animate-pulse flex items-center justify-center p-4 sm:p-6 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-100 dark:border-slate-800">
+                    <img src="/logo.png" alt="Loading Localu..." className="w-12 h-12 sm:w-16 sm:h-16 object-contain drop-shadow-xl" />
+                </div>
             </div>
         );
     }
@@ -131,7 +139,7 @@ export default function CheckoutPage() {
         );
     }
 
-    const prevFinalTotal = Math.max(0, pricing.total - (appliedPromo?.discountAmount || 0));
+    const prevFinalTotal = Math.max(0, pricing.total + tipAmount - (appliedPromo?.discountAmount || 0));
     const walletUsed = useWallet ? Math.min(walletBalance, prevFinalTotal) : 0;
     const finalTotal = Math.max(0, prevFinalTotal - walletUsed);
 
@@ -183,6 +191,7 @@ export default function CheckoutPage() {
             discountAmount: appliedPromo?.discountAmount || 0,
             promoCode: appliedPromo?.code,
             walletUsed: walletUsed,
+            tipAmount: tipAmount,
             total: finalTotal,
             paymentMethod: finalTotal === 0 ? "wallet" : method,
             transactionId: txId
@@ -241,9 +250,9 @@ export default function CheckoutPage() {
     // (loading check moved above cart-empty check)
 
     return (
-        <div className="min-h-screen bg-white dark:bg-slate-950 py-10 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 md:px-8 font-sans transition-colors duration-300">
+        <div className="min-h-screen bg-white dark:bg-slate-950 py-6 sm:py-10 md:py-16 lg:py-24 px-4 sm:px-6 md:px-8 font-sans transition-colors duration-300">
             <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
-            <div className="max-w-6xl mx-auto space-y-12">
+            <div className="max-w-6xl mx-auto space-y-8 md:space-y-12">
                 <Link href="/" className="inline-flex items-center gap-2 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all mb-4 font-black uppercase tracking-widest text-xs">
                     <ArrowLeft className="w-4 h-4" /> Return to store
                 </Link>
@@ -258,10 +267,10 @@ export default function CheckoutPage() {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10">
                     {/* Delivery Form */}
-                    <div className="lg:col-span-2 space-y-8">
-                        <div className="glass-card p-8 md:p-12 border-white/20 premium-shadow rounded-[3rem] space-y-10">
+                    <div className="lg:col-span-2 space-y-6 lg:space-y-8">
+                        <div className="glass-card p-5 sm:p-8 md:p-12 border-white/20 premium-shadow rounded-3xl md:rounded-[3rem] space-y-8 md:space-y-10">
                             <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-3">
                                 <MapPin className="w-6 h-6 text-blue-600" /> Delivery Details
                             </h2>
@@ -300,15 +309,26 @@ export default function CheckoutPage() {
                                         <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                             <MapPin className="w-3 h-3" /> Shipping Address
                                         </label>
-                                        <button
-                                            type="button"
-                                            onClick={handleLocate}
-                                            disabled={locating}
-                                            className="text-[10px] font-black text-blue-600 dark:text-blue-400 flex items-center gap-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-4 py-2 rounded-full transition-all border border-blue-100 dark:border-blue-900/30 active:scale-95 disabled:opacity-50"
-                                        >
-                                            {locating ? <Loader2 className="w-3 h-3 animate-spin" /> : <LocateFixed className="w-3 h-3" />}
-                                            {locating ? "PINNING..." : "AUTO DETECT"}
-                                        </button>
+                                        <div className="flex gap-2">
+                                            {savedAddresses.length > 0 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectingAddress(true)}
+                                                    className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 px-3 sm:px-4 py-2 rounded-full transition-all border border-emerald-100 dark:border-emerald-900/30 active:scale-95"
+                                                >
+                                                    <MapPin className="w-3 h-3" /> SAVED
+                                                </button>
+                                            )}
+                                            <button
+                                                type="button"
+                                                onClick={handleLocate}
+                                                disabled={locating}
+                                                className="text-[10px] font-black text-blue-600 dark:text-blue-400 flex items-center gap-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-3 sm:px-4 py-2 rounded-full transition-all border border-blue-100 dark:border-blue-900/30 active:scale-95 disabled:opacity-50"
+                                            >
+                                                {locating ? <Loader2 className="w-3 h-3 animate-spin" /> : <LocateFixed className="w-3 h-3" />}
+                                                {locating ? "PINNING..." : "AUTO DETECT"}
+                                            </button>
+                                        </div>
                                     </div>
                                     <textarea
                                         required
@@ -318,6 +338,32 @@ export default function CheckoutPage() {
                                         placeholder="Flat, Building, Street..."
                                         className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-slate-900 dark:text-white p-6 rounded-3xl focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/20 focus:border-blue-500 outline-none transition-all font-bold text-md shadow-inner resize-none"
                                     />
+                                </div>
+
+                                {/* Rider Tip Section */}
+                                <div className="pt-10 border-t border-slate-100 dark:border-slate-800 space-y-6">
+                                    <div>
+                                        <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-3">
+                                            Support Your Rider 💝
+                                        </h3>
+                                        <p className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest mt-1">100% of the tip goes directly to them</p>
+                                    </div>
+                                    <div className="flex gap-3 sm:gap-4 overflow-x-auto custom-scrollbar pb-2">
+                                        {[0, 10, 20, 50].map((amt) => (
+                                            <button
+                                                key={amt}
+                                                type="button"
+                                                onClick={() => setTipAmount(amt)}
+                                                className={`flex-shrink-0 px-6 sm:px-8 py-3 sm:py-4 rounded-2xl font-black uppercase text-sm tracking-widest transition-all ${
+                                                    tipAmount === amt
+                                                        ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-105"
+                                                        : "bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                                }`}
+                                            >
+                                                {amt === 0 ? "No Tip" : `₹${amt}`}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
 
                                 {/* Payment Method Section */}
@@ -345,11 +391,11 @@ export default function CheckoutPage() {
                                     )}
 
                                     {finalTotal > 0 && (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                             <button
                                                 type="button"
                                                 onClick={() => setPaymentMethod("cod")}
-                                                className={`group flex items-center gap-6 p-8 rounded-[2rem] border-2 transition-all duration-300 ${paymentMethod === "cod" ? "border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-white shadow-xl shadow-blue-500/10" : "border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:border-slate-200"}`}
+                                                className={`group flex items-center gap-4 sm:gap-6 p-5 sm:p-8 rounded-3xl md:rounded-[2rem] border-2 transition-all duration-300 ${paymentMethod === "cod" ? "border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-white shadow-xl shadow-blue-500/10" : "border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:border-slate-200"}`}
                                             >
                                                 <div className={`p-4 rounded-2xl transition-all ${paymentMethod === "cod" ? "bg-blue-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover:bg-slate-200"}`}>
                                                     <Banknote className="w-8 h-8" />
@@ -363,7 +409,7 @@ export default function CheckoutPage() {
                                             <button
                                                 type="button"
                                                 onClick={() => setPaymentMethod("upi")}
-                                                className={`group flex items-center gap-6 p-8 rounded-[2rem] border-2 transition-all duration-300 ${paymentMethod === "upi" ? "border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-white shadow-xl shadow-blue-500/10" : "border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:border-slate-200"}`}
+                                                className={`group flex items-center gap-4 sm:gap-6 p-5 sm:p-8 rounded-3xl md:rounded-[2rem] border-2 transition-all duration-300 ${paymentMethod === "upi" ? "border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-white shadow-xl shadow-blue-500/10" : "border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:border-slate-200"}`}
                                             >
                                                 <div className={`p-4 rounded-2xl transition-all ${paymentMethod === "upi" ? "bg-blue-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover:bg-slate-200"}`}>
                                                     <CreditCard className="w-8 h-8" />
@@ -380,7 +426,7 @@ export default function CheckoutPage() {
                                         <motion.div 
                                             initial={{ opacity: 0, y: 20 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            className="bg-slate-900 text-white p-10 rounded-[3rem] border border-white/10 shadow-2xl space-y-8"
+                                            className="bg-slate-900 text-white p-6 sm:p-10 rounded-3xl md:rounded-[3rem] border border-white/10 shadow-2xl space-y-6 sm:space-y-8"
                                         >
                                             <p className="text-sm text-slate-400 text-center font-bold tracking-tight px-10">Scan to pay <strong className="text-white text-2xl font-black block mt-2">₹{finalTotal.toFixed(0)}</strong></p>
 
@@ -423,8 +469,8 @@ export default function CheckoutPage() {
                     </div>
 
                     {/* Order Summary */}
-                    <div className="space-y-8 h-fit lg:sticky lg:top-24">
-                        <div className="glass-card p-10 border-white/20 premium-shadow rounded-[3rem] space-y-10">
+                    <div className="space-y-6 lg:space-y-8 h-fit lg:sticky lg:top-24">
+                        <div className="glass-card p-6 sm:p-8 md:p-10 border-white/20 premium-shadow rounded-3xl md:rounded-[3rem] space-y-8 md:space-y-10">
                             <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-3">
                                 <Tag className="w-5 h-5 text-blue-600" /> Summary
                             </h2>
@@ -452,6 +498,12 @@ export default function CheckoutPage() {
                                     <span>Extras (Tax/Fees)</span>
                                     <span className="text-slate-900 dark:text-slate-300">₹{(pricing.deliveryFee + pricing.platformFee + pricing.tax).toFixed(0)}</span>
                                 </div>
+                                {tipAmount > 0 && (
+                                    <div className="flex justify-between text-emerald-600">
+                                        <span>Rider Tip 💝</span>
+                                        <span>₹{tipAmount.toFixed(0)}</span>
+                                    </div>
+                                )}
                                 
                                 <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
                                     <div className="flex gap-2">
@@ -509,6 +561,48 @@ export default function CheckoutPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Address Selector Modal */}
+            <AnimatePresence>
+                {selectingAddress && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-white dark:bg-slate-950 w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden glass-card border-white/20 premium-shadow"
+                        >
+                            <div className="p-8 pb-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                                <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-3">
+                                    <MapPin className="w-6 h-6 text-blue-600" /> Select Address
+                                </h3>
+                                <button type="button" onClick={() => setSelectingAddress(false)} className="w-10 h-10 bg-slate-100 dark:bg-slate-900 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors font-black">
+                                    ✕
+                                </button>
+                            </div>
+                            <div className="p-8 max-h-[60vh] overflow-y-auto space-y-4 custom-scrollbar">
+                                {savedAddresses.map((addr: any) => (
+                                    <button 
+                                        key={addr._id} 
+                                        type="button"
+                                        onClick={() => {
+                                            setForm({ ...form, address: addr.address, lat: addr.lat, lng: addr.lng });
+                                            setSelectingAddress(false);
+                                            toast.success(`Selected ${addr.label} address`);
+                                        }}
+                                        className="w-full text-left p-5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all focus:outline-none"
+                                    >
+                                        <span className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest leading-none mb-3 inline-block">
+                                            {addr.label}
+                                        </span>
+                                        <p className="text-xs font-bold text-slate-600 dark:text-slate-400 leading-relaxed">{addr.address}</p>
+                                    </button>
+                                ))}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

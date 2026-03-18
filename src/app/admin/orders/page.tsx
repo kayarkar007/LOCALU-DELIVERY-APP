@@ -168,7 +168,7 @@ export default function AdminOrdersPage() {
                                         <p className="font-black text-gray-900 dark:text-white">₹{order.total}</p>
                                         <div className="flex flex-col gap-1 mt-1">
                                             <span className="text-xs font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-md self-start">
-                                                {order.paymentMethod === 'upi' ? 'UPI' : 'COD'}
+                                                {order.paymentMethod === 'upi' ? 'UPI' : 'COD'} {order.tipAmount ? `· ₹${order.tipAmount} Tip` : ''}
                                             </span>
                                             {order.transactionId && (
                                                 <span className="text-[10px] text-gray-500 dark:text-gray-400 font-mono">

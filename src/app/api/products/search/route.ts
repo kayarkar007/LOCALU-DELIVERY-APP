@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
         await connectToDatabase();
 
-        let dbQuery: any = {};
+        const dbQuery: any = {};
 
         if (query) {
             const searchRegex = new RegExp(query, "i");

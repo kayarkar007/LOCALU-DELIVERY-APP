@@ -18,7 +18,7 @@ export async function GET(req: Request) {
         const includeStats = searchParams.get("stats") === "true";
 
         let orders;
-        let stats = { completedToday: 0 };
+        const stats = { completedToday: 0 };
 
         if (includeStats) {
             const startOfDay = new Date();
