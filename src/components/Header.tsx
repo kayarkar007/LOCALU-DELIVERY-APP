@@ -85,6 +85,7 @@ export default function Header({ onCartClick }: { onCartClick: () => void }) {
                             </Link>
                             <button
                                 onClick={() => signOut()}
+                                aria-label="Sign Out"
                                 className="p-2 sm:p-2.5 rounded-full hover:bg-red-500/10 text-slate-500 dark:text-slate-400 hover:text-red-500 transition-all duration-300"
                                 title="Sign Out"
                             >
@@ -116,6 +117,7 @@ export default function Header({ onCartClick }: { onCartClick: () => void }) {
                     {/* Theme Toggle */}
                     <button
                         onClick={() => setTheme(isDark ? "light" : "dark")}
+                        aria-label="Toggle Theme"
                         className="p-2.5 rounded-full hover:bg-amber-500/10 text-slate-500 dark:text-slate-400 hover:text-amber-500 transition-all duration-300"
                         title="Toggle Theme"
                     >
@@ -124,6 +126,7 @@ export default function Header({ onCartClick }: { onCartClick: () => void }) {
                     {/* Cart Toggle */}
                     <button
                         onClick={onCartClick}
+                        aria-label="Open Shopping Cart"
                         className="relative flex items-center justify-center rounded-full p-2.5 bg-blue-600 text-white hover:bg-blue-700 hover:scale-110 active:scale-90 transition-all shadow-lg shadow-blue-600/30"
                     >
                         <ShoppingCart className="h-5 w-5" />
